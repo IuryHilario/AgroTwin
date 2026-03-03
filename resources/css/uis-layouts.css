@@ -1,0 +1,197 @@
+/* Section Header ADD Styles */
+.section-header {
+    background-color: white;
+    color: #1a1a1a;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 30px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.section-header:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.section-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-header i {
+    color: #22c55e;
+    font-size: 1.8rem;
+}
+
+.section-header a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.section-header .local-add {
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .section-header .local-add {
+        text-align: center;
+        justify-content: center !important;
+    }
+}
+
+
+/* Table Data Values */
+.table-wrapper {
+    display: block;
+    margin: 30px;
+
+}
+.table-wrapper table {
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-top: 20px;
+}
+
+.table-wrapper table thead tr th:first-child {
+    border-top-left-radius: 16px;
+}
+.table-wrapper table thead tr th:last-child {
+    border-top-right-radius: 16px;
+}
+.table-wrapper table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 16px;
+}
+.table-wrapper table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 16px;
+}
+
+/* Mostrar tabela apenas em desktop */
+.table-wrapper {
+    display: block;
+}
+
+
+.cards-wrapper {
+    display: none;
+    /* Card layout improvements */
+    gap: 20px;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+@media (max-width: 768px) {
+    .table-wrapper {
+        display: none;
+    }
+
+    .cards-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin: 30px;
+        align-items: stretch;
+    }
+    .cards-wrapper .responsive-card {
+        background-color: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        margin-bottom: 0;
+        border: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s;
+    }
+    .cards-wrapper .responsive-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+    }
+    .cards-wrapper .responsive-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .cards-wrapper .responsive-card-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid #f3f3f3;
+    }
+    .cards-wrapper .responsive-card-row:last-child {
+        border-bottom: none;
+    }
+    .cards-wrapper .responsive-card-label {
+        font-weight: 500;
+        color: #1a1a1a;
+        font-size: 15px;
+    }
+    .cards-wrapper .responsive-card-value {
+        color: #555;
+        font-size: 15px;
+    }
+    .cards-wrapper .responsive-card-actions{
+        display: flex;
+        margin-top: 16px;
+        gap: 8px;
+    }
+    .cards-wrapper .responsive-card-actions a,
+    .cards-wrapper .responsive-card-actions span {
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f6f6f6;
+        transition: background 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .cards-wrapper .responsive-card-actions a:hover,
+    .cards-wrapper .responsive-card-actions span:hover {
+        background: #e0e0e0;
+    }
+    .cards-wrapper .acoes-dropdown-wrapper {
+        position: relative;
+    }
+    .cards-wrapper .acoes-dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 36px;
+        z-index: 10;
+        background: #fff;
+        border: 1px solid #eee;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 6px;
+        min-width: 120px;
+        padding: 6px 0;
+    }
+    .cards-wrapper .acoes-dropdown-menu div {
+        padding: 8px 12px;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .cards-wrapper .acoes-dropdown-menu div:hover {
+        background: #f3f3f3;
+    }
+}
+
+
+
+
+
+
