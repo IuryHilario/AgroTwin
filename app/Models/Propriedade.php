@@ -8,11 +8,12 @@ use App\Traits\UsesEntity;
 use App\Entity\UsuarioEntity;
 use App\Entity\LavouraEntity;
 use App\Models\Lavoura;
+use App\Models\Propriedade\Update;
 use App\Services\BaseService;
 
 class Propriedade extends Model
 {
-    use UsesEntity;
+    use UsesEntity, Update;
 
     public function __construct(array $attributes = [])
     {

@@ -1,5 +1,7 @@
 {{-- Componente reutilizável de cabeçalho de seção com múltiplos botões --}}
 
+@vite(['resources/css/uis-layouts.css'])
+
 <section class="mdl-grid section-header">
     <div class="mdl-cell mdl-cell--6-col" style="display: flex; align-items: center;">
         <h1 class="mdl-typography--title" style="margin: 0;">

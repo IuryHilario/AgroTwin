@@ -20,8 +20,11 @@ trait Crud
 
     public function update(Request $request, $id)
     {
+        $propriedade = PropriedadeModel::where('id_propriedade', $id)
+                                        ->where('id_usuario', Auth::id())
+                                        ->firstOrFail();
 
-        $this->_alterar($id, $request->all());
+        $propriedade->alterar(Auth::id(), $request->all());
 
         return redirect()->route('propriedade.index')
                         ->with('success', 'Propriedade atualizada com sucesso!');
