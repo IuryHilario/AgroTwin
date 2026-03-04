@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PropriedadeEntity
 {
-    public const TABLE = 'propriedade';
+    public const TABLE = 'propriedades';
 
     public const PRIMARY_KEY = 'id_propriedade';
 

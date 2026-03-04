@@ -8,6 +8,7 @@
 namespace App\Models\Lavoura;
 
 use App\Entity\LavouraEntity;
+use App\Entity\UsuarioEntity;
 
 trait Dto
 {
@@ -27,7 +28,7 @@ trait Dto
         $detalhes['status'] = $this->tp_status ? $this->tp_status->label() : 'Não informado';
         $detalhes['observacao'] = $this->ds_observacao ?? 'Nenhuma observação';
         $detalhes['propriedade'] = $this->propriedade ? $this->propriedade->ds_nome : 'Não informada';
-        $detalhes['proprietario'] = $this->propriedade && $this->propriedade->usuario ? $this->propriedade->usuario->name : 'Não informado';
+        $detalhes['proprietario'] = UsuarioEntity::getNomeUsuarioById($this->id_usuario) ?? 'Não informado';
         $detalhes['data_criacao'] = $this->created_at;
         $detalhes['data_atualizacao'] = $this->updated_at;
 

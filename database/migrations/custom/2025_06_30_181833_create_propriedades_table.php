@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('propriedade', function (Blueprint $table) {
+        Schema::create('propriedades', function (Blueprint $table) {
             $table->id('id_propriedade');
             $table->string('ds_nome');
             $table->string('tp_solo')->nullable();
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('ds_localizacao')->nullable();
 
             $table->unsignedBigInteger('id_usuario')->nullable();
-            $table->foreign('id_usuario')->references('id_usuario')->on('users')->onDelete('cascade');
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
 
             $table->timestamps();
         });
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('propriedade');
+        Schema::dropIfExists('propriedades');
     }
 };

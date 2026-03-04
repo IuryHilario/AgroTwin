@@ -18,7 +18,7 @@ class StoreLavouraRequest extends FormRequest
             'dt_plantio' => 'required|date',
             'dt_colheita' => 'required|date|after_or_equal:dt_plantio',
             'ds_observacao' => 'nullable|string',
-            'id_propriedade' => 'required|exists:propriedade,id_propriedade',
+            'id_propriedade' => 'required|exists:propriedades,id_propriedade',
         ];
     }
 

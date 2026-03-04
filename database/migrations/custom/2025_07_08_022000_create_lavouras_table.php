@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lavoura', function (Blueprint $table) {
+        Schema::create('lavouras', function (Blueprint $table) {
             $table->id('id_lavoura');
             $table->string('ds_cultura')->required();
             $table->date('dt_plantio')->nullable();
@@ -20,9 +20,9 @@ return new class extends Migration
             $table->text('ds_observacao')->nullable();
 
             $table->unsignedBigInteger('id_propriedade')->nullable();
-            $table->foreign('id_propriedade')->references('id_propriedade')->on('propriedade')->onDelete('cascade');
+            $table->foreign('id_propriedade')->references('id_propriedade')->on('propriedades')->onDelete('cascade');
             $table->unsignedBigInteger('id_usuario')->nullable();
-            $table->foreign('id_usuario')->references('id_usuario')->on('users')->onDelete('cascade');
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
 
             $table->timestamps();
         });
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lavoura');
+        Schema::dropIfExists('lavouras');
     }
 };
