@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('ds_composicao')->nullable();
 
             $table->unsignedBigInteger('id_usuario')->nullable();
-            $table->foreign('id_usuario')->references('id_usuario')->on('users')->onDelete('cascade');
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
 
             $table->timestamps();
         });
