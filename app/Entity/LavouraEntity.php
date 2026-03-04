@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class LavouraEntity
 {
-    public const TABLE = 'lavoura';
+    public const TABLE = 'lavouras';
 
     public const PRIMARY_KEY = 'id_lavoura';
 
@@ -41,7 +41,7 @@ class LavouraEntity
     public static function getPropriedadesByIdLavoura(Builder $query, $idLavoura)
     {
         return $query->select('*')
-            ->join('propriedade', 'propriedade.id_propriedade', '=', 'lavoura.id_propriedade')
-            ->where('lavoura.id_lavoura', $idLavoura);
+            ->join('propriedades', 'propriedades.id_propriedade', '=', 'lavouras.id_propriedade')
+            ->where('lavouras.id_lavoura', $idLavoura);
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class UsuarioEntity
 {
-    public const TABLE = 'users';
+    public const TABLE = 'usuarios';
 
     public const PRIMARY_KEY = 'id_usuario';
 
@@ -41,8 +41,8 @@ class UsuarioEntity
             return null;
         }
 
-        return DB::table(self::TABLE)
-            ->where(self::PRIMARY_KEY, $id)
+        return DB::table('usuarios')
+            ->where('id_usuario', $id)
             ->value('name');
     }
 }
