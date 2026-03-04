@@ -27,8 +27,8 @@ trait Crud
                 $arValores[$key] = trim($value);
             }
         }
-
-        $this->_alterar($id, $arValores);
+        $insumo = $this->insumoModel::findOrFail($id);
+        $insumo->alterar($id, $arValores);
 
         return redirect()->route('insumos.index')
                         ->with('success', 'Insumo atualizado com sucesso!');

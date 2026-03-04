@@ -15,8 +15,4 @@ class Usuario extends Model
         parent::__construct($attributes);
         $this->setEntity(UsuarioEntity::class);
     }
-
-
-
-
 }
