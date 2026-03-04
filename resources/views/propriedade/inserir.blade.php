@@ -18,8 +18,8 @@
     <div class="mdl-grid">
         <div class="mdl-cell mdl-cell--12-col">
             <x-form.form
-                action="{{ route('propriedade.store') }}"
-                method="POST"
+                action="{{ $action ?? route('propriedade.store') }}"
+                method="{{ $method ?? 'POST' }}"
                 class="mdl-grid"
                 title="Informações da Propriedade"
             >
@@ -30,7 +30,7 @@
                         label="Nome da Propriedade"
                         type="text"
                         required
-                        :value="old('ds_nome')"
+                        :value="old('ds_nome', $propriedade->ds_nome ?? '')"
                         error="{{ $errors->first('ds_nome') }}"
                     />
                 </div>
@@ -42,7 +42,7 @@
                         type="number"
                         step="0.01"
                         required
-                        :value="old('nu_area_hectares')"
+                        :value="old('nu_area_hectares', $propriedade->nu_area_hectares ?? '')"
                         error="{{ $errors->first('nu_area_hectares') }}"
                     />
                 </div>
@@ -52,7 +52,7 @@
                         name="tp_solo"
                         label="Tipo de Solo"
                         :options="\App\Enums\TipoSolo::toSelectArray(true)"
-                        :value="old('tp_solo')"
+                        :value="old('tp_solo', $propriedade->tp_solo?->value ?? '')"
                         error="{{ $errors->first('tp_solo') }}"
                     />
                 </div>
@@ -62,7 +62,7 @@
                         name="ds_localizacao"
                         label="Endereço"
                         type="text"
-                        :value="old('ds_localizacao')"
+                        :value="old('ds_localizacao', $propriedade->ds_localizacao ?? '')"
                         error="{{ $errors->first('ds_localizacao') }}"
                     />
                 </div>
