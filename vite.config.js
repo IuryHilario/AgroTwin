@@ -11,8 +11,13 @@ export default defineConfig({
                 'resources/js/stepper.js',
                 'resources/js/modal.js'
             ],
-            refresh: true,
+            refresh: ['resources/**'],
         }),
         tailwindcss(),
     ],
+    server: {
+        watch: {
+            ignored: ['**/storage/**', '**/vendor/**', '**/node_modules/**'],
+        },
+    },
 });
