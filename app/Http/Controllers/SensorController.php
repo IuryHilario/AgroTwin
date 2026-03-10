@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sensor;
+use App\Models\Sensor as SensorModel;
 
 class SensorController extends Controller
 {
-    protected $model = Sensor::class;
+    use Sensor\Tela;
+
+    protected $model = SensorModel::class;
     protected $resourceName = 'sensores';
-
-
 
 
 }

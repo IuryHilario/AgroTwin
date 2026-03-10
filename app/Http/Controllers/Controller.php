@@ -25,14 +25,14 @@ abstract class Controller
             abort(404, 'Método index não implementado para este controller.');
         }
 
-        if (method_exists($this->model, 'propriedades')) {
-            $data = $this->model::whereHas('propriedades', function ($query) {
+        if (method_exists($this->model, 'propriedade')) {
+            $data = $this->model::whereHas('propriedade', function ($query) {
                 $query->where('id_usuario', Auth::id());
             })->get();
         } else {
-            // Caso contrário, retorna todos os registros do usuário
             $data = $this->model::where('id_usuario', Auth::id())->get();
         }
+
         return view($this->resourceName . '.index', [$this->resourceName => $data]);
     }
 
