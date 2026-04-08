@@ -19,38 +19,27 @@
 >
     <!-- Conteúdo específico do estoque -->
     @if($insumo)
-        <!-- Informações do Insumo -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="fas fa-flask me-2"></i>
-                            Informações do Insumo
-                        </h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>Nome:</strong> {{ $insumo->ds_nome }}
-                            </div>
-                            <div class="col-md-6">
-                                <strong>Tipo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
-                            </div>
-                            <div class="col-md-6 mt-2">
-                                <strong>Fabricante:</strong> {{ $insumo->ds_fabricante ?? 'Não informado' }}
-                            </div>
-                            <div class="col-md-6 mt-2">
-                                <strong>Unidade:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
-                            </div>
-                        </div>
-                    </div>
+        <fieldset>
+            <legend>Informações do Insumo</legend>
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--6-col">
+                    <strong>Nome do Insumo:</strong> {{ $insumo->ds_nome }}
+                </div>
+                <div class="mdl-cell mdl-cell--6-col">
+                    <strong>Tipo de Insumo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
+                </div>
+                <div class="mdl-cell mdl-cell--6-col">
+                    <strong>Fabricante:</strong> {{ $insumo->ds_fabricante ?? 'Não informado' }}
+                </div>
+                <div class="mdl-cell mdl-cell--6-col">
+                    <strong>Unidade de Medida:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
                 </div>
             </div>
-        </div>
+        </fieldset>
 
-        <!-- Resumo do Estoque -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card border-primary">
+        <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="card border-primary mb-3">
                     <div class="card-body text-center">
                         <i class="fas fa-warehouse fa-2x text-primary mb-2"></i>
                         <h5 class="card-title">Estoque Atual</h5>
@@ -61,8 +50,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-warning">
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="card border-warning mb-3">
                     <div class="card-body text-center">
                         <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
                         <h5 class="card-title">Estoque Mínimo</h5>
@@ -73,11 +62,11 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-{{ $insumo->estoque_abaixo_minimo ? 'danger' : 'success' }}">
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="card border-{{ $insumo->estoque_abaixo_minimo ? 'danger' : 'success' }} mb-3">
                     <div class="card-body text-center">
-                        <i class="fas fa-check-circle fa-2x text-{{ $insumo->estoque_abaixo_minimo ? 'danger' : 'success' }} mb-2"></i>
-                        <h5 class="card-title">Status</h5>
+                        <i class="fas fa-{{ $insumo->estoque_abaixo_minimo ? 'times-circle' : 'check-circle' }} fa-2x text-{{ $insumo->estoque_abaixo_minimo ? 'danger' : 'success' }} mb-2"></i>
+                        <h5 class="card-title">Status do Estoque</h5>
                         <h3 class="text-{{ $insumo->estoque_abaixo_minimo ? 'danger' : 'success' }}">
                             {{ $insumo->estoque_abaixo_minimo ? 'Baixo' : 'Normal' }}
                         </h3>
@@ -86,28 +75,12 @@
             </div>
         </div>
 
-        <!-- Alertas -->
-        @if($insumo->dt_validade)
-            @php
-                $diasValidade = \Carbon\Carbon::parse($insumo->dt_validade)->diffInDays(now(), false);
-            @endphp
-            @if($diasValidade <= 30)
-                <div class="alert alert-warning mt-3">
-                    <i class="fas fa-calendar-times me-2"></i>
-                    <strong>Atenção:</strong>
-                    Este insumo vence em {{ abs(round($diasValidade)) }} {{ \Illuminate\Support\Str::plural('dia', abs(round($diasValidade))) }}
-                    ({{ \Carbon\Carbon::parse($insumo->dt_validade)->format('d/m/Y') }}).
-                </div>
-            @endif
-        @endif
-
-        <!-- Histórico de Movimentações -->
-        <div class="row">
-            <div class="col-12">
-                <h6 class="mb-3">
-                    <i class="fas fa-history me-2"></i>
-                    Últimas Movimentações
-                </h6>
+        <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--12-col">
+                <i class="fas fa-history me-2"></i>
+                Últimas Movimentações
+            </div>
+            <div class="mdl-cell mdl-cell--12-col">
                 <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
