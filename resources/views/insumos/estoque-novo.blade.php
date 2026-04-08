@@ -35,34 +35,18 @@
 >
     @if($insumo)
         <!-- Informações do Insumo -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="fas fa-flask me-2"></i>
-                            Insumo Selecionado
-                        </h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>Nome:</strong> {{ $insumo->ds_nome }}
-                            </div>
-                            <div class="col-md-6">
-                                <strong>Tipo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
-                            </div>
-                            <div class="col-md-6 mt-2">
-                                <strong>Estoque Atual:</strong>
-                                <span class="badge bg-primary">
-                                    {{ number_format($insumo->estoque_atual, 2, ',', '.') }}
-                                    {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}
-                                </span>
-                            </div>
-                            <div class="col-md-6 mt-2">
-                                <strong>Unidade:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--6-col">
+                <strong>Nome do Insumo:</strong> {{ $insumo->ds_nome }}
+            </div>
+            <div class="mdl-cell mdl-cell--6-col">
+                <strong>Tipo de Insumo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
+            </div>
+            <div class="mdl-cell mdl-cell--6-col">
+                <strong>Fabricante:</strong> {{ $insumo->ds_fabricante ?? 'Não informado' }}
+            </div>
+            <div class="mdl-cell mdl-cell--6-col">
+                <strong>Unidade de Medida:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
             </div>
         </div>
 
@@ -72,7 +56,7 @@
             method="POST"
             class="mdl-grid"
             id="formNovaMovimentacao"
-            title="Registrar Nova Movimentação"
+            title="Nova Movimentação"
         >
             <div class="mdl-cell mdl-cell--6-col">
                 <x-form.select

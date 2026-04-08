@@ -15,57 +15,54 @@
                 Informações Principais
             </h6>
 
-            <!-- Tabela com estilo Material Design Lite -->
-            <table class="mdl-data-table mdl-js-data-table mdl-shadow--2dp" style="width: 100%;">
-                <tbody>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Nome</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">{{ $detalhes['nome'] }}</td>
-                    </tr>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Tipo</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">
-                            <span class="mdl-chip">
-                                <span class="mdl-chip__text">{{ $detalhes['tipo'] }}</span>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Fabricante</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">{{ $detalhes['fabricante'] }}</td>
-                    </tr>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Unidade de Medida</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">
-                            <span class="mdl-chip">
-                                <span class="mdl-chip__text">{{ $detalhes['unidade_medida'] }}</span>
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Data de Validade</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">
-                            @if($detalhes['data_validade'])
-                                {{ \Carbon\Carbon::parse($detalhes['data_validade'])->format('d/m/Y') }}
-                                @php
-                                    $today = \Carbon\Carbon::now();
-                                    $validade = \Carbon\Carbon::parse($detalhes['data_validade']);
-                                    $diasRestantes = $today->diffInDays($validade, false);
-                                @endphp
+            <x-ui.table>
+                <tr>
+                    <x-ui.td><strong>Nome</strong></x-ui.td>
+                    <x-ui.td>{{ $detalhes['nome'] }}</x-ui.td>
+                </tr>
+                <tr>
+                    <x-ui.td><strong>Tipo</strong></x-ui.td>
+                    <x-ui.td>{{ $detalhes['tipo'] }}</x-ui.td>
+                </tr>
+                <tr>
+                    <x-ui.td><strong>Fabricante</strong></x-ui.td>
+                    <x-ui.td>{{ $detalhes['fabricante'] }}</x-ui.td>
+                </tr>
+                <tr>
+                    <x-ui.td><strong>Unidade de Medida</strong></x-ui.td>
+                    <x-ui.td>{{ $detalhes['unidade_medida'] }}</x-ui.td>
+                </tr>
+                <tr>
+                    <x-ui.td><strong>Data de Validade</strong></x-ui.td>
+                    <x-ui.td>
+                        @if($detalhes['data_validade'])
+                            {{ \Carbon\Carbon::parse($detalhes['data_validade'])->format('d/m/Y') }}
+                            @php
+                                $today = \Carbon\Carbon::now();
+                                $validade = \Carbon\Carbon::parse($detalhes['data_validade']);
+                                $diasRestantes = $today->diffInDays($validade, false);
+                            @endphp
+                            @if($diasRestantes < 0)
+                                <span>Vencido</span>
+
+                            @elseif($diasRestantes <= 30)
+                                <span>Vence em {{ $diasRestantes }} dias</span>
+
                             @else
-                                <span class="mdl-chip">
-                                    <span class="mdl-chip__text">Não informada</span>
-                                </span>
+                                <span>Válido</span>
+
                             @endif
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="mdl-data-table__cell--non-numeric"><strong>Usuário Responsável</strong>
-                        </td>
-                        <td class="mdl-data-table__cell--non-numeric">{{ $detalhes['usuario'] }}</td>
-                    </tr>
-                </tbody>
-            </table>
+                        @else
+                            <span>Não informada</span>
+
+                        @endif
+                    </x-ui.td>
+                </tr>
+                <tr>
+                    <x-ui.td><strong>Usuário Responsável</strong></x-ui.td>
+                    <x-ui.td>{{ $detalhes['usuario'] }}</x-ui.td>
+                </tr>
+            </x-ui.table>
         </div>
 
         <!-- Composição -->
