@@ -1,5 +1,4 @@
-# .github/workflows/prefix-issue.yml
-name: Prefix issue title
+name: TWIN sequential prefix
 
 on:
   issues:
@@ -8,18 +7,44 @@ on:
 jobs:
   prefix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
     steps:
-      - uses: actions/github-script@v7
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read and increment counter
+        id: counter
+        run: |
+          COUNT=$(cat twin-counter.txt)
+          NEW=$((COUNT + 1))
+          printf "%02d" $NEW > twin-counter.txt
+          echo "value=$(printf "%02d" $NEW)" >> $GITHUB_OUTPUT
+
+      - name: Commit updated counter
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add twin-counter.txt
+          git commit -m "ci: bump TWIN counter to ${{ steps.counter.outputs.value }}"
+          git push
+
+      - name: Update issue title
+        uses: actions/github-script@v7
         with:
           script: |
             const issue = context.payload.issue;
-            const title = issue.title;
+            const twin = '${{ steps.counter.outputs.value }}';
 
-            if (!title.startsWith('TWIN-')) {
+            if (!issue.title.startsWith('TWIN-')) {
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                title: `TWIN-${issue.number} ${title}`
+                title: `TWIN-${twin} ${issue.title}`
               });
             }
