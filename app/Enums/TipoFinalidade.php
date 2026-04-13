@@ -7,7 +7,7 @@ enum TipoFinalidade: string
     case PREVENTIVA = 'preventiva';
     case CURATIVA = 'curativa';
     case CORRETIVA = 'corretiva';
-    case NUTRICONAL = 'nutricional';
+    case NUTRICIONAL = 'nutricional';
     case CRESCIMENTO = 'crescimento';
     case MANUTENCAO = 'manutencao';
 
@@ -17,7 +17,7 @@ enum TipoFinalidade: string
             self::PREVENTIVA => 'Preventiva',
             self::CURATIVA => 'Curativa',
             self::CORRETIVA => 'Corretiva',
-            self::NUTRICONAL => 'Nutricional',
+            self::NUTRICIONAL => 'Nutricional',
             self::CRESCIMENTO => 'Crescimento',
             self::MANUTENCAO => 'Manutenção',
         };
