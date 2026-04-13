@@ -1,0 +1,25 @@
+# .github/workflows/prefix-issue.yml
+name: Prefix issue title
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  prefix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title;
+
+            if (!title.startsWith('TWIN-')) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                title: `TWIN-${issue.number} ${title}`
+              });
+            }
