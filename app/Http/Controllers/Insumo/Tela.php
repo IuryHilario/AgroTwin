@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Insumo;
 
 use App\Enums\TipoInsumo;
 use App\Enums\TipoUnidadeMedida;
-use App\Models\Lavoura;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -68,49 +67,33 @@ trait Tela
         return view('insumos.estoque-novo', compact('insumo'));
     }
 
+
     public function telaAplicacao($id)
     {
-        $aplicacao = $this->insumoModel->where('id_insumo', $id)
-                          ->where('id_usuario', Auth::id())
-                          ->with(['getAplicacoes' => function($query) {
-                              $query->orderBy('dt_aplicacao', 'desc')
-                                    ->orderBy('created_at', 'desc');
-                          }])
-                          ->firstOrFail();
-
-        if (request()->expectsJson()) {
-            $html = view('insumos.aplicacao', compact('aplicacao'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return view('insumos.aplicacao', compact('aplicacao'));
-    }
-
-    public function telaAplicacaoNova($id)
-    {
-        $aplicacao = $this->insumoModel::where('id_insumo', $id)
-                          ->where('id_usuario', Auth::id())
-                          ->firstOrFail();
-
-        $lavouras = Lavoura::where('id_usuario', Auth::id())->get();
-
-        if (request()->expectsJson()) {
-            $html = view('insumos.aplicacao-nova', compact('aplicacao', 'lavouras'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return view('insumos.aplicacao-nova', compact('aplicacao', 'lavouras'));
+        return $this->handleCustomFunction('aplicacao', $id);
     }
 
     public function telaRelatorio($id)
     {
         return $this->handleCustomFunction('relatorio', $id);
     }
+
+    public function telaAplicacaoNova($id)
+    {
+        $insumo = $this->insumoModel::where('id_insumo', $id)
+                         ->where('id_usuario', Auth::id())
+                         ->firstOrFail();
+
+        if (request()->expectsJson()) {
+            $html = view('insumos.aplicacao-nova', compact('insumo'))->render();
+            return response()->json([
+                'success' => true,
+                'html' => $html
+            ]);
+        }
+
+        return view('insumos.aplicacao-nova', compact('insumo'));
+    }
+
 
 }

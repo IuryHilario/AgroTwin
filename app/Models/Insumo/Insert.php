@@ -19,10 +19,4 @@ trait Insert
         $service = new BaseService(new \App\Models\InsumoControleEstoque());
         return $service->_inserir($data);
     }
-
-    public function inserirAplicacao(array $data)
-    {
-        $service = new BaseService(new \App\Models\InsumoAplicacao());
-        return $service->_inserir($data);
-    }
 }
