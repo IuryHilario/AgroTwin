@@ -33,7 +33,7 @@ class Insumo extends Model
         return $this->hasMany(InsumoControleEstoque::class, 'id_insumo', 'id_insumo');
     }
 
-    public function getAplicacoes()
+    public function aplicacoes()
     {
         return $this->hasMany(InsumoAplicacao::class, 'id_insumo', 'id_insumo')
                     ->orderBy('id_insumo_aplicacao', 'desc');
