@@ -44,6 +44,6 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                title: `TWIN-${twin} ${issue.title}`
+                title: `TWIN-${twin} - ${issue.title}`
               });
             }
