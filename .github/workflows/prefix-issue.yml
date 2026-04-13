@@ -21,7 +21,7 @@ jobs:
         id: counter
         run: |
           COUNT=$(cat twin-counter.txt)
-          NEW=$((COUNT + 1))
+          NEW=$(( 10#$COUNT + 1 ))
           printf "%02d" $NEW > twin-counter.txt
           echo "value=$(printf "%02d" $NEW)" >> $GITHUB_OUTPUT
 
@@ -39,7 +39,6 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const twin = '${{ steps.counter.outputs.value }}';
-
             if (!issue.title.startsWith('TWIN-')) {
               await github.rest.issues.update({
                 owner: context.repo.owner,
