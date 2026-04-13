@@ -1,9 +1,14 @@
+@php
+    $insumo = $insumo ?? $aplicacao ?? null;
+    $aplicacao = $aplicacao ?? $insumo;
+@endphp
+
 <x-ui.modal-funcional
     modalId="aplicacaoInsumo"
     title="Aplicação de Insumo"
     icon="fas fa-spray-can"
     size="modal-xl"
-    :item="$aplicacao ?? null"
+    :item="$insumo"
     resourceName="insumo"
     :additionalButtons="[
         [
@@ -13,29 +18,29 @@
             'icon' => 'fas fa-plus',
             'type' => 'button',
             'data-action' => 'nova-aplicacao',
-            'data-url' => isset($aplicacao) ? route('insumos.aplicacao.create', $aplicacao->id_insumo) : '#'
+            'data-url' => $insumo ? route('insumos.aplicacao.create', $insumo->id_insumo) : '#'
         ]
     ]"
 >
 
-    @if($aplicacao)
+    @if($insumo)
         <fieldset>
             <legend>
                 <i class="fas fa-flask me-2"></i> <strong>Informações Insumo</strong>
             </legend>
             <div class="mdl-grid">
                 <div class="mdl-cell mdl-cell--6-col">
-                    <strong>Nome:</strong> {{ $aplicacao->ds_nome }}
+                    <strong>Nome:</strong> {{ $insumo->ds_nome }}
                 </div>
                 <div class="mdl-cell mdl-cell--6-col">
-                    <strong>Tipo:</strong> {{ $aplicacao->tp_insumo ? $aplicacao->tp_insumo->label() : 'Não informado' }}
+                    <strong>Tipo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
                 </div>
                 <div class="mdl-cell mdl-cell--6-col">
-                    <strong>Fabricante:</strong> {{ $aplicacao->ds_fabricante ?? 'Não informado' }}
+                    <strong>Fabricante:</strong> {{ $insumo->ds_fabricante ?? 'Não informado' }}
                 </div>
                 <div class="mdl-cell mdl-cell--6-col">
                     <strong>Unidade:</strong>
-                    {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->label() : 'Não informada' }}
+                    {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
                 </div>
             </div>
         </fieldset>
