@@ -28,17 +28,18 @@ class Insumo extends Model
         return $this->belongsTo(Usuario::class, 'id_usuario');
     }
 
-    /**
-     * Relacionamento com Movimentações de Estoque
-     */
     public function movimentacoes()
     {
         return $this->hasMany(InsumoControleEstoque::class, 'id_insumo', 'id_insumo');
     }
 
-    /**
-     * Calcula o estoque atual baseado nas movimentações
-     */
+    public function getAplicacoes()
+    {
+        return $this->hasMany(InsumoAplicacao::class, 'id_insumo', 'id_insumo')
+                    ->orderBy('id_insumo_aplicacao', 'desc');
+
+    }
+
     public function getEstoqueAtualAttribute()
     {
         return $this->movimentacoes()
@@ -52,17 +53,11 @@ class Insumo extends Model
             ->value('estoque_atual') ?? 0;
     }
 
-    /**
-     * Verifica se o estoque está abaixo do mínimo
-     */
     public function getEstoqueAbaixoMinimoAttribute()
     {
         return $this->estoque_atual < $this->nu_estoque_minimo;
     }
 
-    /**
-     * Obtém o histórico de movimentações com saldo calculado
-     */
     public function getMovimentacoesComSaldoAttribute()
     {
         $movimentacoes = $this->movimentacoes()
@@ -88,9 +83,5 @@ class Insumo extends Model
             return $mov->dt_movimentacao . ' ' . $mov->created_at;
         });
     }
-
-
-
-
 
 }

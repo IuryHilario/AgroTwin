@@ -12,6 +12,7 @@ use App\Http\Controllers\InsumoController;
     Route::post('/insumos/{id}/estoque/movimentacao', [InsumoController::class, 'storeEstoque'])->name('insumos.estoque.store');
     Route::get('/insumos/aplicacao/{id}', [InsumoController::class, 'telaAplicacao'])->name('insumos.aplicacao');
     Route::get('/insumos/aplicacao/{id}/criar', [InsumoController::class, 'telaAplicacaoNova'])->name('insumos.aplicacao.create');
+    Route::post('/insumos/aplicacao/{id}', [InsumoController::class, 'storeAplicacao'])->name('insumos.aplicacao.store');
     Route::get('/insumos/relatorio/{id}', [InsumoController::class, 'telaRelatorio'])->name('insumos.relatorio');
     Route::get('/insumos/{id}', [InsumoController::class, 'show'])->name('insumos.show');
     Route::get('/insumos/{id}/edit', [InsumoController::class, 'telaEditar'])->name('insumos.edit');

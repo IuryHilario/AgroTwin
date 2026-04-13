@@ -3,7 +3,7 @@
     title="Nova Aplicação de Insumo"
     icon="fas fa-spray-can"
     size="modal-lg"
-    :item="$insumo ?? null"
+    :item="$aplicacao ?? null"
     resourceName="insumo"
     :additionalButtons="[
         [
@@ -13,7 +13,7 @@
             'icon' => 'fas fa-arrow-left',
             'type' => 'button',
             'data-action' => 'voltar-aplicacao',
-            'data-url' => isset($insumo) ? route('insumos.aplicacao', $insumo->id_insumo) : '#'
+            'data-url' => isset($aplicacao) ? route('insumos.aplicacao', $aplicacao->id_insumo) : '#'
         ],
         [
             'tag' => 'button',
@@ -33,7 +33,7 @@
         ],
     ]"
 >
-    @if($insumo)
+    @if($aplicacao)
         <!-- Informações do Insumo -->
         <div class="row mb-4">
             <div class="col-12">
@@ -45,20 +45,20 @@
                         </h6>
                         <div class="row">
                             <div class="col-md-6">
-                                <strong>Nome:</strong> {{ $insumo->ds_nome }}
+                                <strong>Nome:</strong> {{ $aplicacao->ds_nome }}
                             </div>
                             <div class="col-md-6">
-                                <strong>Tipo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
+                                <strong>Tipo:</strong> {{ $aplicacao->tp_insumo ? $aplicacao->tp_insumo->label() : 'Não informado' }}
                             </div>
                             <div class="col-md-6 mt-2">
                                 <strong>Estoque Disponível:</strong>
-                                <span class="badge bg-{{ $insumo->estoque_atual > 0 ? 'success' : 'danger' }}">
-                                    {{ number_format($insumo->estoque_atual, 2, ',', '.') }}
-                                    {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}
+                                <span class="badge bg-{{ $aplicacao->estoque_atual > 0 ? 'success' : 'danger' }}">
+                                    {{ number_format($aplicacao->estoque_atual, 2, ',', '.') }}
+                                    {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}
                                 </span>
                             </div>
                             <div class="col-md-6 mt-2">
-                                <strong>Unidade:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
+                                <strong>Unidade:</strong> {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->label() : 'Não informada' }}
                             </div>
                         </div>
                     </div>
@@ -68,7 +68,7 @@
 
         <!-- Formulário de Nova Aplicação -->
         <x-form.form-modal
-            action="#"
+            action="{{ route('insumos.aplicacao.store', $aplicacao->id_insumo) }}"
             method="POST"
             class="mdl-grid"
             id="formNovaAplicacao"
@@ -82,25 +82,15 @@
                 </h6>
             </div>
 
-            <div class="mdl-cell mdl-cell--6-col">
+            <div class="mdl-cell mdl-cell--12-col">
                 <x-form.input
-                    name="data_aplicacao"
-                    label="Data da Aplicação"
-                    type="date"
-                    :value="now()->format('Y-m-d')"
+                    name="dt_aplicacao"
+                    label="Data Aplicação"
+                    type="datetime-local"
+                    :value="now()->format('Y-m-d H:i')"
                     required
                 />
             </div>
-            <div class="mdl-cell mdl-cell--6-col">
-                <x-form.input
-                    name="hora_aplicacao"
-                    label="Hora da Aplicação"
-                    type="time"
-                    :value="now()->format('H:i')"
-                    required
-                />
-            </div>
-
             <!-- Localização -->
             <div class="mdl-cell mdl-cell--12-col">
                 <h6 class="text-muted mb-3 mt-3">
@@ -111,22 +101,15 @@
 
             <div class="mdl-cell mdl-cell--8-col">
                 <x-form.select
-                    name="lavoura_id"
+                    name="id_lavoura"
                     label="Lavoura"
-                    :options="[
-                        '' => 'Selecione uma lavoura...',
-                        1 => 'Lavoura Norte',
-                        2 => 'Lavoura Sul',
-                        3 => 'Lavoura Leste',
-                        4 => 'Lavoura Oeste',
-                        5 => 'Lavoura Centro'
-                    ]"
+                    :options="['' => 'Selecione uma lavoura'] + $lavouras->pluck('ds_cultura', 'id_lavoura')->toArray()"
                     required
                 />
             </div>
             <div class="mdl-cell mdl-cell--4-col">
                 <x-form.input
-                    name="area_aplicada"
+                    name="nu_area_aplicada"
                     label="Área Aplicada (ha)"
                     type="number"
                     step="0.01"
@@ -146,7 +129,7 @@
 
             <div class="mdl-cell mdl-cell--4-col">
                 <x-form.input
-                    name="quantidade_aplicada"
+                    name="nu_quantidade_aplicada"
                     label="Quantidade Aplicada"
                     type="number"
                     step="0.01"
@@ -157,8 +140,8 @@
             </div>
             <div class="mdl-cell mdl-cell--4-col">
                 <x-form.input
-                    name="dosagem_hectare"
-                    label="Dosagem por Hectare"
+                    name="nu_dosagem_hectare"
+                    label="Dosagem Hectare"
                     type="number"
                     step="0.01"
                     min="0.01"
@@ -168,7 +151,7 @@
             </div>
             <div class="mdl-cell mdl-cell--4-col">
                 <x-form.input
-                    name="concentracao"
+                    name="nu_concentracao"
                     label="Concentração (%)"
                     type="number"
                     step="0.01"
@@ -188,21 +171,15 @@
 
             <div class="mdl-cell mdl-cell--6-col">
                 <x-form.select
-                    name="metodo_aplicacao"
+                    name="tp_metodo_aplicacao"
                     label="Método de Aplicação"
-                    :options="[
-                        '' => 'Selecione...',
-                        'pulverizacao_terrestre' => 'Pulverização Terrestre',
-                        'pulverizacao_aerea' => 'Pulverização Aérea',
-                        'aplicacao_localizada' => 'Aplicação Localizada',
-                        'fertirrigacao' => 'Fertirrigação'
-                    ]"
+                    :options="\App\Enums\TipoMetodoAplicacao::toSelectArray(true)"
                     required
                 />
             </div>
             <div class="mdl-cell mdl-cell--6-col">
                 <x-form.input
-                    name="equipamento"
+                    name="ds_equipamento"
                     label="Equipamento Utilizado"
                     placeholder="Ex: Pulverizador 2000L, Drone DJI T20"
                 />
@@ -211,31 +188,23 @@
             <!-- Responsável -->
             <div class="mdl-cell mdl-cell--6-col">
                 <x-form.input
-                    name="responsavel"
+                    name="ds_responsavel"
                     label="Responsável pela Aplicação"
-                    :value="auth()->user()->name"
                     required
                 />
             </div>
             <div class="mdl-cell mdl-cell--6-col">
                 <x-form.select
-                    name="finalidade"
+                    name="tp_finalidade"
                     label="Finalidade"
-                    :options="[
-                        '' => 'Selecione...',
-                        'preventiva' => 'Preventiva',
-                        'curativa' => 'Curativa',
-                        'nutricional' => 'Nutricional',
-                        'crescimento' => 'Crescimento',
-                        'manutencao' => 'Manutenção'
-                    ]"
+                    :options="\App\Enums\TipoFinalidade::toSelectArray(true)"
                 />
             </div>
 
             <!-- Observações -->
             <div class="mdl-cell mdl-cell--12-col">
                 <x-form.input
-                    name="observacoes"
+                    name="ds_observacoes"
                     label="Observações"
                     type="textarea"
                     rows="3"
@@ -263,7 +232,7 @@
                 const dosagemInput = document.querySelector('input[name="dosagem_hectare"]');
                 const alertaEstoque = document.getElementById('alertaEstoqueInsuficiente');
                 const alertaCondicoes = document.getElementById('alertaCondicoesDesfavoraveis');
-                const estoqueDisponivel = {{ $insumo->estoque_atual }};
+                const estoqueDisponivel = {{ $aplicacao->estoque_atual }};
 
                 function calcularDosagem() {
                     const quantidade = parseFloat(quantidadeInput.value) || 0;
