@@ -86,7 +86,7 @@ trait Tela
             ]);
         }
 
-        return view('insumos.aplicacao', compact('aplicacao'));
+        return $this->handleCustomFunction('aplicacao', $id);
     }
 
     public function telaAplicacaoNova($id)

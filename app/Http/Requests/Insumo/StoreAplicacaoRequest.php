@@ -38,7 +38,7 @@ class StoreAplicacaoRequest extends FormRequest
     {
         return [
             'dt_aplicacao.required' => 'A data de aplicação é obrigatória.',
-            'dt_aplicacao.date_format' => 'A data de aplicação deve ser uma data válida.',
+            'dt_aplicacao.date' => 'A data de aplicação deve ser uma data válida.',
 
             'id_lavoura.required' => 'A lavoura é obrigatória.',
             'id_lavoura.exists' => 'A lavoura selecionada é inválida.',

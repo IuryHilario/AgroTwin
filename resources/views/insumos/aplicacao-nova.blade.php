@@ -227,15 +227,12 @@
         <!-- Script para cálculos automáticos -->
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                const quantidadeInput = document.querySelector('input[name="nu_quantidade_aplicada"]');
-                const areaInput = document.querySelector('input[name="nu_area_aplicada"]');
-                const dosagemInput = document.querySelector('input[name="nu_dosagem_hectare"]');
+                const quantidadeInput = document.querySelector('input[name="quantidade_aplicada"]');
+                const areaInput = document.querySelector('input[name="area_aplicada"]');
+                const dosagemInput = document.querySelector('input[name="dosagem_hectare"]');
                 const alertaEstoque = document.getElementById('alertaEstoqueInsuficiente');
+                const alertaCondicoes = document.getElementById('alertaCondicoesDesfavoraveis');
                 const estoqueDisponivel = {{ $aplicacao->estoque_atual }};
-
-                if (!quantidadeInput || !areaInput || !dosagemInput) {
-                    return;
-                }
 
                 function calcularDosagem() {
                     const quantidade = parseFloat(quantidadeInput.value) || 0;
@@ -249,17 +246,34 @@
                     }
 
                     // Verifica estoque
-                    if (alertaEstoque) {
-                        if (quantidade > estoqueDisponivel) {
-                            alertaEstoque.classList.remove('d-none');
-                        } else {
-                            alertaEstoque.classList.add('d-none');
-                        }
+                    if (quantidade > estoqueDisponivel) {
+                        alertaEstoque.classList.remove('d-none');
+                    } else {
+                        alertaEstoque.classList.add('d-none');
+                    }
+                }
+
+                function verificarCondicoes() {
+                    const vento = parseFloat(document.querySelector('input[name="velocidade_vento"]').value) || 0;
+                    const umidade = parseFloat(document.querySelector('input[name="umidade"]').value) || 0;
+
+                    let condicoesRuins = false;
+
+                    if (vento > 10) condicoesRuins = true;
+                    if (umidade < 40 || umidade > 95) condicoesRuins = true;
+
+                    if (condicoesRuins) {
+                        alertaCondicoes.classList.remove('d-none');
+                    } else {
+                        alertaCondicoes.classList.add('d-none');
                     }
                 }
 
                 quantidadeInput.addEventListener('input', calcularDosagem);
                 areaInput.addEventListener('input', calcularDosagem);
+
+                document.querySelector('input[name="velocidade_vento"]').addEventListener('input', verificarCondicoes);
+                document.querySelector('input[name="umidade"]').addEventListener('input', verificarCondicoes);
             });
         </script>
     @endif

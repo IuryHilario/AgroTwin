@@ -47,9 +47,7 @@
 
         <!-- Estatísticas de Aplicação -->
         @php
-            $aplicacoes = $aplicacao->relationLoaded('getAplicacoes')
-                ? $aplicacao->getAplicacoes
-                : collect();
+            $aplicacoes = $aplicacao->getAplicacoes()->get();
             $totalAplicacoes = $aplicacoes->count();
             $totalQuantidade = $aplicacoes->sum('nu_quantidade_aplicada');
             $totalArea = $aplicacoes->sum('nu_area_aplicada');
