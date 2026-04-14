@@ -1,3 +1,7 @@
+@php
+use \Carbon\Carbon;
+@endphp
+
 <x-ui.modal-funcional
     modalId="detalharLavoura"
     title="Detalhes da Lavoura"
@@ -23,24 +27,13 @@
                     </tr>
                     <tr>
                         <td class="mdl-data-table__cell--non-numeric"><strong>Status:</strong></td>
-                        <td class="mdl-data-table__cell--non-numeric">
-                            @php
-                                $statusClass = match($detalhes['status']) {
-                                    'Ativo' => 'bg-success',
-                                    'Inativo' => 'bg-danger',
-                                    'Planejado' => 'bg-info',
-                                    'Colhido' => 'bg-secondary',
-                                    default => 'bg-primary'
-                                };
-                            @endphp
-                            <span class="badge {{ $statusClass }}">{{ $detalhes['status'] }}</span>
-                        </td>
+                        <td class="mdl-data-table__cell--non-numeric">{{ $detalhes['status'] }}</td>
                     </tr>
                     <tr>
                         <td class="mdl-data-table__cell--non-numeric"><strong>Data de Plantio:</strong></td>
                         <td class="mdl-data-table__cell--non-numeric">
                             @if($detalhes['dt_plantio'])
-                                {{ \Carbon\Carbon::parse($detalhes['dt_plantio'])->format('d/m/Y') }}
+                                {{ Carbon::parse($detalhes['dt_plantio'])->format('d/m/Y') }}
                             @else
                                 Não informada
                             @endif
@@ -50,19 +43,7 @@
                         <td class="mdl-data-table__cell--non-numeric"><strong>Data de Colheita:</strong></td>
                         <td class="mdl-data-table__cell--non-numeric">
                             @if($detalhes['dt_colheita'])
-                                {{ \Carbon\Carbon::parse($detalhes['dt_colheita'])->format('d/m/Y') }}
-                                @php
-                                    $today = \Carbon\Carbon::now();
-                                    $colheita = \Carbon\Carbon::parse($detalhes['dt_colheita']);
-                                    $diasParaColheita = $today->diffInDays($colheita, false);
-                                @endphp
-                                @if($diasParaColheita < 0)
-                                    <span class="badge bg-info ms-2">Colheita passou</span>
-                                @elseif($diasParaColheita <= 7)
-                                    <span class="badge bg-warning ms-2">Colheita próxima</span>
-                                @else
-                                    <span class="badge bg-success ms-2">Em desenvolvimento</span>
-                                @endif
+                                {{ Carbon::parse($detalhes['dt_colheita'])->format('d/m/Y') }}
                             @else
                                 Não informada
                             @endif
