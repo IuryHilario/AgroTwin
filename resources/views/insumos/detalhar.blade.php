@@ -33,14 +33,14 @@
                     <x-ui.td>{{ $detalhes['unidade_medida'] }}</x-ui.td>
                 </tr>
                 <tr>
-                    <x-ui.td><strong>Data de Validade</strong></x-ui.td>
+                    <x-ui.td><strong>Data Validade</strong></x-ui.td>
                     <x-ui.td>
                         @if($detalhes['data_validade'])
                             {{ \Carbon\Carbon::parse($detalhes['data_validade'])->format('d/m/Y') }}
                             @php
                                 $today = \Carbon\Carbon::now();
                                 $validade = \Carbon\Carbon::parse($detalhes['data_validade']);
-                                $diasRestantes = $today->diffInDays($validade, false);
+                                $diasRestantes = (int)$today->diffInDays($validade, false);
                             @endphp
                             @if($diasRestantes < 0)
                                 <span>Vencido</span>
