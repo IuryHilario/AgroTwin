@@ -11,7 +11,7 @@ class UpdateLavouraRequest extends FormRequest
         return [
             'ds_cultura' => 'required|string|max:255',
             'ds_observacao' => 'nullable|string',
-            'id_propriedade' => 'required|exists:propriedade,id_propriedade',
+            'id_propriedade' => 'required|exists:propriedades,id_propriedade',
         ];
     }
 
