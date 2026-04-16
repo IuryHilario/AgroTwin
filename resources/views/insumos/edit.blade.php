@@ -60,7 +60,7 @@
                         name="dt_validade"
                         label="Data de Validade"
                         type="date"
-                        :value="old('dt_validade', $insumo->dt_validade)"
+                        :value="old('dt_validade', $insumo->dt_validade?->format('Y-m-d'))"
                     />
                 </div>
                 <div class="mdl-cell mdl-cell--12-col">
