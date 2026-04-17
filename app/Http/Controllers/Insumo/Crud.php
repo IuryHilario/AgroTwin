@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Insumo;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 use App\Http\Requests\Insumo\StoreInsumoRequest;
 use App\Http\Requests\Insumo\StoreAplicacaoRequest;
+use App\Http\Requests\Insumo\UpdateInsumoRequest;
 use App\Http\Requests\Insumo\StoreEstoqueRequest;
-
 use App\Models\InsumoControleEstoque;
 
 trait Crud
@@ -20,16 +19,12 @@ trait Crud
         return redirect()->route('insumos.index')->with('success', 'Insumo criado com sucesso!');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateInsumoRequest $request, $id)
     {
-        $arValores = [];
-        foreach ($request->all() as $key => $value) {
-            if (is_string($value)) {
-                $arValores[$key] = trim($value);
-            }
-        }
+
         $insumo = $this->insumoModel::findOrFail($id);
-        $insumo->alterar($id, $arValores);
+
+        $insumo->alterar($id, $request->validated());
 
         return redirect()->route('insumos.index')
                         ->with('success', 'Insumo atualizado com sucesso!');
