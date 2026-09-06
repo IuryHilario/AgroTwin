@@ -81,8 +81,11 @@ use App\Entity\UsuarioEntity;
                 ['chave' => 'umidade', 'label' => 'Umidade do Solo', 'unidade' => '%', 'icone' => 'fa-tint', 'cor' => 'text-blue-500'],
                 ['chave' => 'ph', 'label' => 'pH do Solo', 'unidade' => '', 'icone' => 'fa-flask', 'cor' => 'text-violet-500'],
                 ['chave' => 'temperatura', 'label' => 'Temperatura', 'unidade' => '°C', 'icone' => 'fa-thermometer-half', 'cor' => 'text-amber-500'],
-                ['chave' => 'npk', 'label' => 'NPK', 'unidade' => '', 'icone' => 'fa-seedling', 'cor' => 'text-green-500'],
                 ['chave' => 'condutividade', 'label' => 'Condutividade (EC)', 'unidade' => 'µS/cm', 'icone' => 'fa-bolt', 'cor' => 'text-yellow-500'],
+                ['chave' => 'nitrogenio', 'label' => 'Nitrogênio', 'unidade' => 'ppm', 'icone' => 'fa-seedling', 'cor' => 'text-green-500'],
+                ['chave' => 'fosforo', 'label' => 'Fósforo', 'unidade' => 'ppm', 'icone' => 'fa-seedling', 'cor' => 'text-green-500'],
+                ['chave' => 'potassio', 'label' => 'Potássio', 'unidade' => 'ppm', 'icone' => 'fa-seedling', 'cor' => 'text-green-500'],
+                ['chave' => 'npk', 'label' => 'NPK', 'unidade' => '', 'icone' => 'fa-seedling', 'cor' => 'text-green-500'],
             ];
         @endphp
         <div class="mb-8 grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5">
@@ -126,7 +129,11 @@ use App\Entity\UsuarioEntity;
                         </select>
                     </div>
                     <div class="relative h-[250px]">
-                        <canvas id="moistureChart"></canvas>
+                        <canvas
+                            id="moistureChart"
+                            data-labels="{{ json_encode($dadosDashboard['seriesTemporais']['umidade']['labels']) }}"
+                            data-valores="{{ json_encode($dadosDashboard['seriesTemporais']['umidade']['valores']) }}"
+                        ></canvas>
                     </div>
                 </div>
 
@@ -140,7 +147,11 @@ use App\Entity\UsuarioEntity;
                         </select>
                     </div>
                     <div class="relative h-[250px]">
-                        <canvas id="phChart"></canvas>
+                        <canvas
+                            id="phChart"
+                            data-labels="{{ json_encode($dadosDashboard['seriesTemporais']['ph']['labels']) }}"
+                            data-valores="{{ json_encode($dadosDashboard['seriesTemporais']['ph']['valores']) }}"
+                        ></canvas>
                     </div>
                 </div>
             </div>

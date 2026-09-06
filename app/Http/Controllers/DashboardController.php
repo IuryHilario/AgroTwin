@@ -93,6 +93,40 @@ class DashboardController extends Controller
             'recomendacoes' => $lavoura ? $this->recomendacaoService->gerarParaLavoura($lavoura) : [],
             'ultimasLeituras' => $this->getUltimasLeituras($sensores),
             'sensoresStatus' => $sensores,
+            'seriesTemporais' => $this->getSeriesTemporais($sensores),
+        ];
+    }
+
+    /**
+     * Série diária (últimos 7 dias) de umidade e pH, para os gráficos do
+     * dashboard. Usa o primeiro sensor de cada tipo encontrado entre os
+     * sensores exibidos (mesmo critério de getDadosSensores).
+     */
+    private function getSeriesTemporais($sensores): array
+    {
+        $fim = now()->endOfDay();
+        $inicio = $fim->copy()->subDays(6)->startOfDay();
+
+        return [
+            'umidade' => $this->serieSensorPorTipo($sensores, 'umidade_solo', $inicio, $fim),
+            'ph' => $this->serieSensorPorTipo($sensores, 'ph', $inicio, $fim),
+        ];
+    }
+
+    private function serieSensorPorTipo($sensores, string $tipo, $inicio, $fim): array
+    {
+        $sensor = $sensores->first(fn (Sensor $s) => $s->tp_sensor?->value === $tipo);
+
+        if (!$sensor) {
+            return ['labels' => [], 'valores' => []];
+        }
+
+        $leituras = $this->leituraService->historicoEntrePeriodo($sensor, $inicio, $fim);
+        $serie = $this->leituraService->serieDiaria($leituras);
+
+        return [
+            'labels' => $serie->keys()->values()->all(),
+            'valores' => $serie->values()->all(),
         ];
     }
 
@@ -124,8 +158,11 @@ class DashboardController extends Controller
             'umidade' => $ultimaPorTipo['umidade_solo']->valor ?? null,
             'ph' => $ultimaPorTipo['ph']->valor ?? null,
             'temperatura' => $ultimaPorTipo['temperatura']->valor ?? null,
-            'npk' => $this->calcularNpk($ultimaPorTipo),
+            'nitrogenio' => $ultimaPorTipo['nitrogenio']->valor ?? null,
+            'fosforo' => $ultimaPorTipo['fosforo']->valor ?? null,
+            'potassio' => $ultimaPorTipo['potassio']->valor ?? null,
             'condutividade' => $ultimaPorTipo['condutividade']->valor ?? null,
+            'npk' => $this->calcularNpk($ultimaPorTipo),
         ];
     }
 

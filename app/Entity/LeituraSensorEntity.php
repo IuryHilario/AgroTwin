@@ -33,4 +33,11 @@ class LeituraSensorEntity
             ->where('dt_leitura', '>=', $desde)
             ->orderBy('dt_leitura');
     }
+
+    public static function getEntrePeriodo(Builder $query, $idSensor, $inicio, $fim)
+    {
+        return $query->where('id_sensor', $idSensor)
+            ->whereBetween('dt_leitura', [$inicio, $fim])
+            ->orderBy('dt_leitura');
+    }
 }
