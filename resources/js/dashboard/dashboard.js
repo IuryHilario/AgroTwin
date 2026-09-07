@@ -116,16 +116,33 @@ function initializeCharts() {
     createPhChart();
 }
 
+// Lê os data-* injetados pelo Blade (série real vinda do SensorReadingService)
+// e formata as datas ISO (Y-m-d) como dd/mm para exibir no eixo X.
+function lerSerieDoCanvas(ctx) {
+    const labels = JSON.parse(ctx.dataset.labels || '[]');
+    const valores = JSON.parse(ctx.dataset.valores || '[]');
+
+    return {
+        labels: labels.map(function(data) {
+            const [ano, mes, dia] = data.split('-');
+            return dia + '/' + mes;
+        }),
+        valores: valores,
+    };
+}
+
 // Create moisture chart
 function createMoistureChart() {
     const ctx = document.getElementById('moistureChart');
     if (!ctx) return;
 
+    const serie = lerSerieDoCanvas(ctx);
+
     const moistureData = {
-        labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+        labels: serie.labels,
         datasets: [{
             label: 'Umidade (%)',
-            data: [38, 42, 39, 45, 41, 44, 41],
+            data: serie.valores,
             borderColor: '#3b82f6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             borderWidth: 3,
@@ -152,8 +169,6 @@ function createMoistureChart() {
             scales: {
                 y: {
                     beginAtZero: false,
-                    min: 30,
-                    max: 50,
                     grid: {
                         color: '#f3f4f6'
                     },
@@ -183,11 +198,13 @@ function createPhChart() {
     const ctx = document.getElementById('phChart');
     if (!ctx) return;
 
+    const serie = lerSerieDoCanvas(ctx);
+
     const phData = {
-        labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+        labels: serie.labels,
         datasets: [{
             label: 'pH',
-            data: [6.0, 6.1, 6.3, 6.2, 6.2, 6.1, 6.2],
+            data: serie.valores,
             borderColor: '#8b5cf6',
             backgroundColor: 'rgba(139, 92, 246, 0.1)',
             borderWidth: 3,
@@ -214,8 +231,6 @@ function createPhChart() {
             scales: {
                 y: {
                     beginAtZero: false,
-                    min: 5.5,
-                    max: 7.0,
                     grid: {
                         color: '#f3f4f6'
                     },

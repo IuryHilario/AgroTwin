@@ -56,6 +56,15 @@ class ModalManager {
                 // Para edição, redireciona normalmente (semelhante ao inserir)
                 window.location.href = url;
                 break;
+            case 'inativar':
+                this.confirmAndExecute(url, 'Deseja realmente inativar esta propriedade?');
+                break;
+            case 'ativar':
+                this.confirmAndExecute(url, 'Deseja realmente ativar esta propriedade?');
+                break;
+            case 'excluir':
+                this.confirmAndExecute(url, 'Deseja realmente excluir este registro? Essa ação não pode ser desfeita.', 'DELETE');
+                break;
             case 'novo':
                 // Carrega o modal via AJAX para evitar recarregar a página
                 this.loadModal(url, element);
@@ -63,6 +72,49 @@ class ModalManager {
             default:
                 this.loadModal(url, element);
         }
+    }
+
+    /**
+     * Pede confirmação ao usuário e, se confirmado, executa a ação via AJAX
+     * (usada por ações de estado como inativar/ativar/excluir). Mostra o
+     * resultado num modal e recarrega a página ao fechar (Ok), refletindo o
+     * novo estado na listagem. Métodos diferentes de GET enviam o token CSRF.
+     */
+    confirmAndExecute(url, confirmMessage, method = 'GET') {
+        this.showConfirmModal(confirmMessage, async () => {
+            try {
+                this.showLoading();
+
+                const headers = {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                };
+
+                if (method !== 'GET') {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    if (token) {
+                        headers['X-CSRF-TOKEN'] = token;
+                    }
+                }
+
+                const response = await fetch(url, { method, headers });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    this.showResultModal(true, data.message || 'Operação realizada com sucesso!', () => {
+                        window.location.reload();
+                    });
+                } else {
+                    this.showResultModal(false, data.message || 'Erro ao processar a solicitação.');
+                }
+            } catch (error) {
+                console.error('Erro ao executar ação:', error);
+                this.showResultModal(false, 'Erro ao processar a solicitação. Tente novamente.');
+            } finally {
+                this.hideLoading();
+            }
+        });
     }
 
     async loadModal(url, triggerElement) {
@@ -322,6 +374,44 @@ class ModalManager {
 
     closeResultModal() {
         document.getElementById('modal-result')?.remove();
+    }
+
+    /**
+     * Modal de confirmação (Sim/Não) antes de executar uma ação. onConfirm só
+     * roda se o usuário clicar em "Sim"; "Não" ou fechar apenas descarta.
+     */
+    showConfirmModal(message, onConfirm) {
+        document.getElementById('modal-confirm')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'modal-confirm';
+        overlay.className = 'fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-4';
+        overlay.innerHTML = `
+            <div class="w-full max-w-sm rounded-xl bg-white shadow-2xl dark:bg-gray-800">
+                <div class="flex flex-col items-center gap-3 p-6 text-center">
+                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+                        <i class="fas fa-circle-question text-amber-600 dark:text-amber-400 text-2xl"></i>
+                    </div>
+                    <p class="modal-confirm-message text-sm text-gray-600 dark:text-gray-400"></p>
+                </div>
+                <div class="flex justify-center gap-2 border-t border-gray-100 p-4 dark:border-gray-700">
+                    <button type="button" class="btn btn-outline modal-confirm-no">Não</button>
+                    <button type="button" class="btn btn-success modal-confirm-yes">Sim</button>
+                </div>
+            </div>
+        `;
+
+        overlay.querySelector('.modal-confirm-message').textContent = message;
+
+        const close = () => overlay.remove();
+        overlay.querySelector('.modal-confirm-no').addEventListener('click', close);
+        overlay.querySelector('.modal-confirm-yes').addEventListener('click', () => {
+            close();
+            onConfirm();
+        });
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('.modal-confirm-yes').focus();
     }
 }
 

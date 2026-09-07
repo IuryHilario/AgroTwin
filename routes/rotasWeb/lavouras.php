@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LavouraController;
+use Illuminate\Support\Facades\Route;
 
 // Rotas de lavouras
 Route::prefix('lavouras')->group(function () {
@@ -12,6 +12,7 @@ Route::prefix('lavouras')->group(function () {
     Route::get('/{id}/edit', [LavouraController::class, 'telaAlterar'])->name('lavouras.edit');
     Route::get('/{id}/monitorar', [LavouraController::class, 'telaMonitorar'])->name('lavouras.monitorar');
     Route::put('/{id}/update', [LavouraController::class, 'update'])->name('lavouras.update');
+    Route::delete('/{id}', [LavouraController::class, 'destroy'])->name('lavouras.destroy');
     Route::get('/{id}/limites', [LavouraController::class, 'telaConfigurarLimites'])->name('lavouras.limites');
     Route::post('/{id}/limites', [LavouraController::class, 'salvarLimites'])->name('lavouras.limites.salvar');
     Route::get('/{id}/irrigacao/iniciar', [LavouraController::class, 'iniciarIrrigacaoManual'])->name('lavouras.irrigacao.iniciar');

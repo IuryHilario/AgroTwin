@@ -10,24 +10,27 @@ trait Tela
 {
     public function telaInserir()
     {
-        $propriedades = Propriedade::where('id_usuario', $this->idUsuario)->pluck('ds_nome', 'id_propriedade');
+        $propriedades = PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario);
+
         return view('lavouras.inserir', compact('propriedades'));
     }
+
     public function telaAlterar($id)
     {
         $lavoura = $this->LavouraModel::findOrFail($id);
         $propriedades = PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario);
+
         return view('lavouras.edit', compact('lavoura', 'propriedades'));
     }
 
     public function telaMonitorar($id, SensorReadingService $leituraService)
     {
         $lavoura = $this->LavouraModel::with(['propriedade', 'sensores'])
-                          ->whereHas('propriedade', function ($query) {
-                              $query->where('id_usuario', $this->idUsuario);
-                          })
-                          ->where('id_lavoura', $id)
-                          ->firstOrFail();
+            ->whereHas('propriedade', function ($query) {
+                $query->where('id_usuario', $this->idUsuario);
+            })
+            ->where('id_lavoura', $id)
+            ->firstOrFail();
 
         $ultimasLeituras = $lavoura->sensores->mapWithKeys(fn ($sensor) => [
             $sensor->id_sensor => $leituraService->ultimaLeitura($sensor),
@@ -40,10 +43,11 @@ trait Tela
 
         if (request()->ajax()) {
             $html = view('lavouras.monitor', $dados)->render();
+
             return response()->json([
                 'success' => true,
                 'data' => $lavoura,
-                'html' => $html
+                'html' => $html,
             ]);
         }
 

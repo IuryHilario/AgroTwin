@@ -16,9 +16,7 @@ use App\Models\Sensor;
 
 class RecomendacaoService
 {
-    public function __construct(private SensorReadingService $leituraService)
-    {
-    }
+    public function __construct(private SensorReadingService $leituraService) {}
 
     /**
      * Avalia uma nova leitura e, se ela justificar uma recomendação, salva
@@ -28,7 +26,7 @@ class RecomendacaoService
      */
     public function avaliarERegistrar(Sensor $sensor, float $valor): ?Recomendacao
     {
-        if (!$sensor->id_lavoura || !$sensor->tp_sensor) {
+        if (! $sensor->id_lavoura || ! $sensor->tp_sensor) {
             return null;
         }
 
@@ -36,12 +34,12 @@ class RecomendacaoService
             ->where('tp_sensor', $sensor->tp_sensor->value)
             ->first();
 
-        if (!$limite) {
+        if (! $limite) {
             return null;
         }
 
         $sugestao = $this->sugerirPara($sensor->tp_sensor, $valor, $limite);
-        if (!$sugestao) {
+        if (! $sugestao) {
             return null;
         }
 
@@ -49,6 +47,9 @@ class RecomendacaoService
             'id_lavoura' => $sensor->id_lavoura,
             'tp_sensor' => $sensor->tp_sensor->value,
             'ds_recomendacao' => $sugestao,
+            'nu_valor_leitura' => $valor,
+            'nu_limite_min' => $limite->valor_min,
+            'nu_limite_max' => $limite->valor_max,
             'dt_recomendacao' => now(),
         ]);
     }
@@ -62,17 +63,17 @@ class RecomendacaoService
         $limites = ConfiguracaoLimite::porLavoura($lavoura->id_lavoura);
 
         foreach ($lavoura->sensores as $sensor) {
-            if (!$sensor->tp_sensor) {
+            if (! $sensor->tp_sensor) {
                 continue;
             }
 
             $limite = $limites->get($sensor->tp_sensor->value);
-            if (!$limite) {
+            if (! $limite) {
                 continue;
             }
 
             $ultimaLeitura = $this->leituraService->ultimaLeitura($sensor);
-            if (!$ultimaLeitura) {
+            if (! $ultimaLeitura) {
                 continue;
             }
 
@@ -90,7 +91,7 @@ class RecomendacaoService
         $abaixoDoMinimo = $limite->valor_min !== null && $valor < $limite->valor_min;
         $acimaDoMaximo = $limite->valor_max !== null && $valor > $limite->valor_max;
 
-        if (!$abaixoDoMinimo && !$acimaDoMaximo) {
+        if (! $abaixoDoMinimo && ! $acimaDoMaximo) {
             return null;
         }
 

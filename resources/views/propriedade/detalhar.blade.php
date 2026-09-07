@@ -15,6 +15,7 @@
             ['label' => 'Tipo de Solo', 'value' => $detalhes['tp_solo']],
             ['label' => 'Área Total (ha)', 'value' => $detalhes['area_hectares']],
             ['label' => 'Lavouras Cadastradas', 'value' => $detalhes['total_lavouras']],
+            ['label' => 'Status', 'value' => $detalhes['status']],
         ]" />
     </x-ui.detail-section>
 

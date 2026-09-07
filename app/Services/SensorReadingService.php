@@ -35,4 +35,52 @@ class SensorReadingService
     {
         return LeituraSensorEntity::getHistorico(LeituraSensor::query(), $sensor->id_sensor, $desde)->get();
     }
+
+    public function historicoEntrePeriodo(Sensor $sensor, DateTimeInterface $inicio, DateTimeInterface $fim): Collection
+    {
+        return LeituraSensorEntity::getEntrePeriodo(LeituraSensor::query(), $sensor->id_sensor, $inicio, $fim)->get();
+    }
+
+    /**
+     * Estatísticas do período: mínimo, máximo, média e quantidade de leituras.
+     */
+    public function resumoEstatistico(Collection $leituras): array
+    {
+        return [
+            'minimo' => $leituras->isEmpty() ? null : round($leituras->min('valor'), 2),
+            'maximo' => $leituras->isEmpty() ? null : round($leituras->max('valor'), 2),
+            'media' => $leituras->isEmpty() ? null : round($leituras->avg('valor'), 2),
+            'quantidade' => $leituras->count(),
+        ];
+    }
+
+    /**
+     * Série com a média diária das leituras, pronta para alimentar um gráfico
+     * de linha (uma leitura por dia em vez de todos os pontos brutos).
+     */
+    public function serieDiaria(Collection $leituras): Collection
+    {
+        return $leituras
+            ->groupBy(fn (LeituraSensor $leitura) => $leitura->dt_leitura->format('Y-m-d'))
+            ->map(fn (Collection $doDia) => round($doDia->avg('valor'), 2))
+            ->sortKeys();
+    }
+
+    /**
+     * Resumo + série diária de cada sensor da coleção, no período — o que
+     * toda tela de relatório/histórico de sensores precisa (Dashboard,
+     * Relatórios). Evita repetir esse loop em cada controller.
+     */
+    public function relatorioPorSensores(Collection $sensores, DateTimeInterface $inicio, DateTimeInterface $fim): Collection
+    {
+        return $sensores->map(function (Sensor $sensor) use ($inicio, $fim) {
+            $leituras = $this->historicoEntrePeriodo($sensor, $inicio, $fim);
+
+            return [
+                'sensor' => $sensor,
+                'resumo' => $this->resumoEstatistico($leituras),
+                'serie' => $this->serieDiaria($leituras),
+            ];
+        });
+    }
 }

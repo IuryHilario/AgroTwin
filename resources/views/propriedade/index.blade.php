@@ -15,6 +15,7 @@
             ['label' => 'Localização', 'key' => 'ds_localizacao'],
             ['label' => 'Área (ha)', 'key' => 'nu_area_hectares'],
             ['label' => 'Tipo de Solo', 'key' => 'tp_solo'],
+            ['label' => 'Status', 'key' => 'fl_inativo', 'badge' => true, 'badgeTrueLabel' => 'Inativo', 'badgeFalseLabel' => 'Ativo'],
         ]"
         :arValores="$propriedade"
         showActions="true"
