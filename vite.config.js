@@ -10,7 +10,8 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/modal.js',
                 'resources/js/dashboard/dashboard.js',
-                'resources/js/sensores/sensor-form.js'
+                'resources/js/sensores/sensor-form.js',
+                'resources/js/relatorios/index.js'
             ],
             refresh: ['resources/**'],
         }),

@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PropriedadeController;
+use Illuminate\Support\Facades\Route;
 
 // Rotas de propriedades
 Route::prefix('propriedade')->group(function () {
@@ -11,5 +11,5 @@ Route::prefix('propriedade')->group(function () {
     Route::get('/{id}', [PropriedadeController::class, 'show'])->name('propriedade.show');
     Route::get('/{id}/edit', [PropriedadeController::class, 'telaAlterar'])->name('propriedade.edit');
     Route::put('/{id}', [PropriedadeController::class, 'update'])->name('propriedade.update');
+    Route::get('/{id}/inativar', [PropriedadeController::class, 'inativar'])->name('propriedade.inativar');
 });
-

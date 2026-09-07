@@ -1,8 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecomendacaoController;
+use Illuminate\Support\Facades\Route;
 
-Route::prefix('recomendacao')->group(function () {
-    // Route::get('/', [RecomendacaoController::class, 'index'])->name('recomendacao.index');
+Route::prefix('recomendacoes')->group(function () {
+    Route::get('/', [RecomendacaoController::class, 'index'])->name('recomendacoes.index');
+    Route::get('/{id}', [RecomendacaoController::class, 'show'])->name('recomendacoes.show');
 });

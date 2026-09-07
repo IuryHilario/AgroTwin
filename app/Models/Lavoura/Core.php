@@ -44,6 +44,14 @@ trait Core
         ];
         $funcionalidades[] = $funcLimites;
 
+        $funcExcluir = [
+            'id' => 'excluir',
+            'nome' => 'Excluir',
+            'icone' => 'fa-trash',
+            'link' => route('lavouras.destroy', $this->id_lavoura),
+        ];
+        $funcionalidades[] = $funcExcluir;
+
         return $funcionalidades;
     }
 }

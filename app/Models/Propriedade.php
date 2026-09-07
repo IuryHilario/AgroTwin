@@ -2,18 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use App\Entity\PropriedadeEntity;
-use App\Traits\UsesEntity;
-use App\Entity\UsuarioEntity;
 use App\Entity\LavouraEntity;
-use App\Models\Lavoura;
+use App\Entity\PropriedadeEntity;
+use App\Entity\UsuarioEntity;
 use App\Models\Propriedade\Update;
 use App\Services\BaseService;
+use App\Traits\UsesEntity;
+use Illuminate\Database\Eloquent\Model;
 
 class Propriedade extends Model
 {
-    use UsesEntity, Update;
+    use Update, UsesEntity;
 
     public function __construct(array $attributes = [])
     {
@@ -36,6 +35,16 @@ class Propriedade extends Model
         return PropriedadeEntity::getPropriedadesByUsuario($query, $idUsuario);
     }
 
+    /**
+     * Propriedades ativas (fl_inativo = false) — usada nos seletores de
+     * propriedade/lavoura (Dashboard, Relatórios, Recomendações) para não
+     * oferecer propriedades inativadas para seleção.
+     */
+    public function scopeAtivas($query)
+    {
+        return $query->where('fl_inativo', false);
+    }
+
     public static function getById($id)
     {
         return PropriedadeEntity::getPropriedadeById(self::query(), $id)->first();
@@ -48,10 +57,11 @@ class Propriedade extends Model
         $detalhes['id'] = $this->id_propriedade;
         $detalhes['nome'] = $this->ds_nome;
         $detalhes['tp_solo'] = $this->tp_solo ? $this->tp_solo->label() : 'Não informado';
-        $detalhes['area_hectares'] = $this->nu_area_hectares ? number_format($this->nu_area_hectares, 2, ',', '.') . ' ha' : 'Não informada';
+        $detalhes['area_hectares'] = $this->nu_area_hectares ? number_format($this->nu_area_hectares, 2, ',', '.').' ha' : 'Não informada';
         $detalhes['localizacao'] = $this->ds_localizacao ?? 'Não informada';
         $detalhes['proprietario'] = UsuarioEntity::getNomeUsuarioById($this->id_usuario) ?? 'Não informado';
         $detalhes['total_lavouras'] = LavouraEntity::getLavourasByPropriedade(Lavoura::query(), $this->id_propriedade)->count();
+        $detalhes['status'] = $this->fl_inativo ? 'Inativa' : 'Ativa';
         $detalhes['data_criacao'] = $this->created_at;
         $detalhes['data_atualizacao'] = $this->updated_at;
 
@@ -78,6 +88,20 @@ class Propriedade extends Model
         ];
         $funcionalidades[] = $funcEditar;
 
+        $funcionalidades[] = $this->fl_inativo
+            ? [
+                'id' => 'ativar',
+                'nome' => 'Ativar',
+                'icone' => 'fa-toggle-on',
+                'link' => route('propriedade.inativar', $this->id_propriedade),
+            ]
+            : [
+                'id' => 'inativar',
+                'nome' => 'Inativar',
+                'icone' => 'fa-toggle-off',
+                'link' => route('propriedade.inativar', $this->id_propriedade),
+            ];
+
         return $funcionalidades;
     }
 
@@ -85,6 +109,12 @@ class Propriedade extends Model
     {
         $data['id_usuario'] = $idUsuario;
         $service = new BaseService($this);
+
         return $service->_inserir($data);
+    }
+
+    public function alternarStatus(): void
+    {
+        $this->update(['fl_inativo' => ! $this->fl_inativo]);
     }
 }

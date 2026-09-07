@@ -65,4 +65,22 @@ class SensorReadingService
             ->map(fn (Collection $doDia) => round($doDia->avg('valor'), 2))
             ->sortKeys();
     }
+
+    /**
+     * Resumo + série diária de cada sensor da coleção, no período — o que
+     * toda tela de relatório/histórico de sensores precisa (Dashboard,
+     * Relatórios). Evita repetir esse loop em cada controller.
+     */
+    public function relatorioPorSensores(Collection $sensores, DateTimeInterface $inicio, DateTimeInterface $fim): Collection
+    {
+        return $sensores->map(function (Sensor $sensor) use ($inicio, $fim) {
+            $leituras = $this->historicoEntrePeriodo($sensor, $inicio, $fim);
+
+            return [
+                'sensor' => $sensor,
+                'resumo' => $this->resumoEstatistico($leituras),
+                'serie' => $this->serieDiaria($leituras),
+            ];
+        });
+    }
 }

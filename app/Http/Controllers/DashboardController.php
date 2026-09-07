@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Propriedade;
-use App\Models\Sensor;
 use App\Models\Alerta;
 use App\Services\SensorReadingService;
 use App\Services\RecomendacaoService;
+use App\Traits\SelecionaPropriedadeLavoura;
 
 class DashboardController extends Controller
 {
+    use SelecionaPropriedadeLavoura;
+
     public function __construct(
         private SensorReadingService $leituraService,
         private RecomendacaoService $recomendacaoService
@@ -23,45 +25,15 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
-        $usuario = Auth::user();
-
-        // Busca todas as propriedades do usuário logado
-        $propriedades = Propriedade::byUsuario($usuario->id_usuario)->get();
+        [$propriedades, $selectedPropriedade, $lavouras, $selectedLavoura] = $this->selecionarPropriedadeELavoura(
+            $request,
+            Auth::user()
+        );
 
         // Se não há propriedades, redireciona para criar uma
-        if ($propriedades->isEmpty()) {
+        if (!$selectedPropriedade) {
             return redirect()->route('propriedade.inserir')
                 ->with('info', 'Você precisa cadastrar pelo menos uma propriedade para acessar o dashboard.');
-        }
-
-        // Verifica se uma propriedade específica foi selecionada
-        $selectedPropriedadeId = $request->input('id_propriedade');
-
-        // Se não foi especificada uma propriedade ou a especificada não existe/não pertence ao usuário,
-        // usa a propriedade padrão configurada pelo usuário (se houver e ainda existir) ou a primeira.
-        if (!$selectedPropriedadeId || !$propriedades->where('id_propriedade', $selectedPropriedadeId)->first()) {
-            $padrao = $usuario->id_propriedade_padrao
-                ? $propriedades->where('id_propriedade', $usuario->id_propriedade_padrao)->first()
-                : null;
-
-            $selectedPropriedadeId = $padrao?->id_propriedade ?? $propriedades->first()->id_propriedade;
-        }
-
-        // Busca a propriedade selecionada
-        $selectedPropriedade = $propriedades->where('id_propriedade', $selectedPropriedadeId)->first();
-
-        // Uma propriedade pode ter várias lavouras, cada uma com seus próprios
-        // sensores — mostrar tudo agregado confundia o usuário. Agora o
-        // dashboard sempre mostra o monitoramento de UMA lavoura por vez.
-        $lavouras = $selectedPropriedade->lavouras;
-
-        $selectedLavouraId = $request->input('id_lavoura');
-        $selectedLavoura = $selectedLavouraId
-            ? $lavouras->where('id_lavoura', $selectedLavouraId)->first()
-            : null;
-
-        if (!$selectedLavoura) {
-            $selectedLavoura = $lavouras->first();
         }
 
         $dadosDashboard = $this->getDadosDashboard($selectedPropriedade, $selectedLavoura);
@@ -69,7 +41,7 @@ class DashboardController extends Controller
         return view('dashboard.index', [
             'propriedades' => $propriedades,
             'selectedPropriedade' => $selectedPropriedade,
-            'getPropriedadeById' => $selectedPropriedadeId,
+            'getPropriedadeById' => $selectedPropriedade->id_propriedade,
             'lavouras' => $lavouras,
             'selectedLavoura' => $selectedLavoura,
             'dadosDashboard' => $dadosDashboard
@@ -83,9 +55,7 @@ class DashboardController extends Controller
      */
     private function getDadosDashboard($propriedade, $lavoura)
     {
-        $sensores = $lavoura
-            ? $lavoura->sensores
-            : Sensor::where('id_propriedade', $propriedade->id_propriedade)->whereNull('id_lavoura')->get();
+        $sensores = $this->sensoresDaSelecao($propriedade, $lavoura);
 
         return [
             'sensores' => $this->getDadosSensores($sensores),
@@ -107,26 +77,25 @@ class DashboardController extends Controller
         $fim = now()->endOfDay();
         $inicio = $fim->copy()->subDays(6)->startOfDay();
 
+        $relatorio = $this->leituraService->relatorioPorSensores($sensores, $inicio, $fim);
+
         return [
-            'umidade' => $this->serieSensorPorTipo($sensores, 'umidade_solo', $inicio, $fim),
-            'ph' => $this->serieSensorPorTipo($sensores, 'ph', $inicio, $fim),
+            'umidade' => $this->serieDoTipo($relatorio, 'umidade_solo'),
+            'ph' => $this->serieDoTipo($relatorio, 'ph'),
         ];
     }
 
-    private function serieSensorPorTipo($sensores, string $tipo, $inicio, $fim): array
+    private function serieDoTipo(Collection $relatorio, string $tipo): array
     {
-        $sensor = $sensores->first(fn (Sensor $s) => $s->tp_sensor?->value === $tipo);
+        $item = $relatorio->first(fn (array $item) => $item['sensor']->tp_sensor?->value === $tipo);
 
-        if (!$sensor) {
+        if (!$item) {
             return ['labels' => [], 'valores' => []];
         }
 
-        $leituras = $this->leituraService->historicoEntrePeriodo($sensor, $inicio, $fim);
-        $serie = $this->leituraService->serieDiaria($leituras);
-
         return [
-            'labels' => $serie->keys()->values()->all(),
-            'valores' => $serie->values()->all(),
+            'labels' => $item['serie']->keys()->values()->all(),
+            'valores' => $item['serie']->values()->all(),
         ];
     }
 

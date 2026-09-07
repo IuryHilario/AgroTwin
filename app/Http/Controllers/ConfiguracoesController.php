@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Entity\PropriedadeEntity;
 use App\Http\Requests\Configuracoes\UpdateConfiguracoesRequest;
 use App\Models\Propriedade;
 use Illuminate\Support\Facades\Auth;
@@ -10,7 +11,7 @@ class ConfiguracoesController extends Controller
 {
     public function edit()
     {
-        $propriedades = Propriedade::where('id_usuario', Auth::id())->pluck('ds_nome', 'id_propriedade');
+        $propriedades = PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), Auth::id());
 
         return view('configuracoes.edit', [
             'usuario' => Auth::user(),

@@ -40,6 +40,10 @@
     50% { transform: scale(1.05); }
 }
 
+[x-cloak] {
+    display: none !important;
+}
+
 /*
  * Classes de componente reutilizadas em muitas telas (botões e cards).
  * Definidas uma única vez via @apply para evitar repetir a mesma
