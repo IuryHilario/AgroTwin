@@ -20,3 +20,6 @@ Route::get('/sensores/{sensor}/config', [SensorLeituraController::class, 'config
 Route::get('/lavouras/{lavoura}/irrigacao', [IrrigacaoController::class, 'status'])
     ->middleware('throttle:sensor-ingestao')
     ->name('api.lavouras.irrigacao.status');
+
+// Endpoint para obter os limites de leitura de um sensor específico.
+Route::get('sensores/{sensor}/limites', [App\Http\Controllers\Api\SensorLeituraController::class, 'limites'])->name('api.sensores.limites');

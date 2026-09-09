@@ -58,4 +58,24 @@ class SensorLeituraController extends Controller
             'intervalo_leitura_ms' => $intervaloMinutos * 60 * 1000,
         ]);
     }
+    
+    /**
+     * Retorna os limites (minimo e maximo) configurados para o sensor,
+     * usados pelo firmware para decidir quando irrigar (logica de histerese).
+     */
+    public function limites(Sensor $sensor)
+    {
+        if (!$sensor->token || !hash_equals($sensor->token, (string) request()->bearerToken())) {
+            return response()->json(['message' => 'Token inválido.'], 401);
+        }
+
+        $limite = \App\Models\ConfiguracaoLimite::where('id_lavoura', $sensor->id_lavoura)
+            ->where('tp_sensor', $sensor->tp_sensor)
+            ->first();
+
+        return response()->json([
+            'valor_min' => $limite->valor_min ?? null,
+            'valor_max' => $limite->valor_max ?? null,
+        ]);
+    }
 }
