@@ -14,6 +14,8 @@ use App\Http\Controllers\InsumoController;
     Route::get('/insumos/aplicacao/{id}/criar', [InsumoController::class, 'telaAplicacaoNova'])->name('insumos.aplicacao.create');
     Route::post('/insumos/aplicacao/{id}', [InsumoController::class, 'storeAplicacao'])->name('insumos.aplicacao.store');
     Route::get('/insumos/relatorio/{id}', [InsumoController::class, 'telaRelatorio'])->name('insumos.relatorio');
+    Route::get('/insumos/relatorio/{id}/pdf', [InsumoController::class, 'baixarRelatorioPdf'])->name('insumos.relatorio.pdf');
+    Route::post('/insumos/relatorio/{id}/email', [InsumoController::class, 'enviarRelatorioEmail'])->name('insumos.relatorio.email');
     Route::get('/insumos/{id}', [InsumoController::class, 'show'])->name('insumos.show');
     Route::get('/insumos/{id}/edit', [InsumoController::class, 'telaEditar'])->name('insumos.edit');
     Route::put('/insumos/{id}', [InsumoController::class, 'update'])->name('insumos.update');

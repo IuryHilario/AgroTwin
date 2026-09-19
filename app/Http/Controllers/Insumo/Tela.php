@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Insumo;
 use App\Enums\TipoInsumo;
 use App\Enums\TipoUnidadeMedida;
 use App\Models\Lavoura;
+use App\Services\InsumoRelatorioService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -108,9 +110,36 @@ trait Tela
         return view('insumos.aplicacao-nova', compact('aplicacao', 'lavouras'));
     }
 
-    public function telaRelatorio($id)
+    public function telaRelatorio($id, InsumoRelatorioService $relatorioService)
     {
-        return $this->handleCustomFunction('relatorio', $id);
+        [$insumo, $relatorio] = $this->buscarRelatorio($id, $relatorioService);
+
+        if (request()->expectsJson()) {
+            $html = view('insumos.relatorio', compact('insumo', 'relatorio'))->render();
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+            ]);
+        }
+
+        return view('insumos.relatorio', compact('insumo', 'relatorio'));
     }
 
+    public function baixarRelatorioPdf($id, InsumoRelatorioService $relatorioService)
+    {
+        [$insumo, $relatorio] = $this->buscarRelatorio($id, $relatorioService);
+
+        $pdf = Pdf::loadView('insumos.relatorio-pdf', compact('insumo', 'relatorio'));
+
+        return $pdf->download("relatorio-{$insumo->ds_nome}.pdf");
+    }
+
+    private function buscarRelatorio($id, InsumoRelatorioService $relatorioService): array
+    {
+        $insumo = $this->insumoModel::where('id_insumo', $id)
+            ->where('id_usuario', Auth::id())
+            ->firstOrFail();
+
+        return [$insumo, $relatorioService->gerar($insumo)];
+    }
 }
