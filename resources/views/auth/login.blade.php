@@ -43,6 +43,12 @@
                     <p class="text-sm text-muted">Sistema de Monitoramento de Solo com IoT e IA</p>
                 </div>
 
+                @if (session('success'))
+                    <div class="mb-5 rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('login') }}" class="flex flex-col gap-5" autocomplete="off">
                     @csrf
 
@@ -76,7 +82,7 @@
                             <input type="checkbox" name="remember" class="h-[18px] w-[18px] rounded border-gray-300 text-green-600 focus:ring-green-500">
                             Lembrar-me
                         </label>
-                        <a href="#" class="text-sm font-medium text-green-600 hover:text-green-800 hover:underline dark:text-green-400 dark:hover:text-green-300">Esqueceu a senha?</a>
+                        <a href="{{ route('password.request') }}" class="text-sm font-medium text-green-600 hover:text-green-800 hover:underline dark:text-green-400 dark:hover:text-green-300">Esqueceu a senha?</a>
                     </div>
 
                     <button type="submit" class="btn btn-primary mt-2 w-full normal-case">
