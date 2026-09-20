@@ -16,8 +16,9 @@
             ['label' => 'Situação', 'key' => 'fl_lida', 'tipo' => 'booleano', 'rotuloSim' => 'Lido', 'tomSim' => 'neutro', 'rotuloNao' => 'Não lido', 'tomNao' => 'info'],
             ['label' => 'Mensagem', 'key' => 'ds_mensagem', 'destaque' => true],
             ['label' => 'Severidade', 'key' => 'tp_severidade', 'tipo' => 'status'],
+            ['label' => 'Desvio', 'key' => 'nu_ocorrencias', 'tipo' => 'episodio'],
             ['label' => 'Lavoura', 'key' => 'lavoura.ds_cultura'],
-            ['label' => 'Data', 'key' => 'dt_alerta', 'tipo' => 'data_hora'],
+            ['label' => 'Início', 'key' => 'dt_alerta', 'tipo' => 'data_hora'],
         ]"
         :arValores="$alertas"
         showActions="true"

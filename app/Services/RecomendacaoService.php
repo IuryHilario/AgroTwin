@@ -16,6 +16,9 @@ use App\Models\Sensor;
 
 class RecomendacaoService
 {
+    /** Janela em que uma recomendação idêntica não é registrada de novo. */
+    private const HORAS_ENTRE_REPETICOES = 12;
+
     public function __construct(private SensorReadingService $leituraService) {}
 
     /**
@@ -43,6 +46,10 @@ class RecomendacaoService
             return null;
         }
 
+        if ($this->jaRegistrada($sensor, $sugestao)) {
+            return null;
+        }
+
         return Recomendacao::create([
             'id_lavoura' => $sensor->id_lavoura,
             'tp_sensor' => $sensor->tp_sensor->value,
@@ -52,6 +59,20 @@ class RecomendacaoService
             'nu_limite_max' => $limite->valor_max,
             'dt_recomendacao' => now(),
         ]);
+    }
+
+    /**
+     * A mesma sugestão não se repete dentro da janela: enquanto o parâmetro
+     * continuar fora da faixa, toda leitura geraria de novo o mesmo texto —
+     * com leitura a cada 30 minutos, dezenas de linhas idênticas por dia.
+     */
+    private function jaRegistrada(Sensor $sensor, string $sugestao): bool
+    {
+        return Recomendacao::where('id_lavoura', $sensor->id_lavoura)
+            ->where('tp_sensor', $sensor->tp_sensor->value)
+            ->where('ds_recomendacao', $sugestao)
+            ->where('dt_recomendacao', '>=', now()->subHours(self::HORAS_ENTRE_REPETICOES))
+            ->exists();
     }
 
     /**

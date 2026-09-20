@@ -3,6 +3,7 @@
       texto (padrão) · data · data_hora · numero (casas, sufixo) · status · booleano
       conexao (sensor: online/sem enviar) · validade (data + aviso de vencimento)
       estoque (quantidade + aviso de estoque abaixo do mínimo)
+      episodio (alerta: nº de leituras fora da faixa e se ainda está em curso)
     'destaque' => true deixa o valor em evidência (use na coluna principal).
     Mesma renderização na tabela (desktop) e nos cards (mobile).
 --}}
@@ -39,7 +40,18 @@
     ];
 @endphp
 
-@if ($tipo === 'conexao')
+@if ($tipo === 'episodio')
+    {{-- Um alerta cobre todas as leituras fora da faixa até o valor normalizar. --}}
+    <span class="inline-flex flex-col items-end gap-1">
+        <x-ui.selo :tom="$item->emCurso() ? 'alerta' : 'neutro'">
+            {{ $item->emCurso() ? 'Em curso' : 'Normalizado' }}
+        </x-ui.selo>
+        <span class="font-readout whitespace-nowrap text-xs text-muted">
+            {{ $item->nu_ocorrencias }} {{ $item->nu_ocorrencias === 1 ? 'leitura' : 'leituras' }}
+        </span>
+    </span>
+
+@elseif ($tipo === 'conexao')
     {{-- Saúde do sensor: o status cadastrado diz o que deveria ser, isto diz o que está acontecendo. --}}
     @php $ultima = $item->ultimaLeitura; @endphp
     @if (!$ultima)

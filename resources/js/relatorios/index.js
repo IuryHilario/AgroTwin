@@ -2,6 +2,10 @@
 const FORA_DA_FAIXA = '#f43f5e';
 const DENTRO_DA_FAIXA = '#16a34a';
 
+// Uma casa decimal, em pt-BR. As marcas do eixo saem da divisão do intervalo
+// pelo Chart.js e chegam como 5.140000000000001 quando a faixa é estreita.
+const formatarNumero = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format;
+
 /**
  * Faixa ideal desenhada como área preenchida entre o máximo e o mínimo:
  * o produtor vê de relance em que dias a linha saiu do verde.
@@ -88,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         filter: (ctx) => ctx.datasetIndex === faixa.length,
                         callbacks: {
                             label: (ctx) =>
-                                ctx.parsed.y + unidade + (foraDaFaixa(ctx.parsed.y) ? ' · fora da faixa ideal' : ''),
+                                formatarNumero(ctx.parsed.y) + unidade +
+                                (foraDaFaixa(ctx.parsed.y) ? ' · fora da faixa ideal' : ''),
                         },
                     },
                 },
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     y: {
                         beginAtZero: false,
                         grid: { color: 'rgba(148, 163, 184, 0.15)' },
-                        ticks: { callback: (value) => value + unidade },
+                        ticks: { callback: (value) => formatarNumero(value) + unidade },
                     },
                     x: {
                         grid: { display: false },

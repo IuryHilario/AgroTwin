@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\AlertaGeradoMail;
+use App\Models\Alerta;
 use App\Services\AlertaService;
 use App\Services\SensorReadingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -102,6 +103,84 @@ class AlertaServiceTest extends TestCase
         $alerta = app(AlertaService::class)->verificar($this->registrarLeitura($sensor, 4.5));
 
         $this->assertSame('critical', $alerta->tp_severidade);
+    }
+
+    public function test_desvio_que_continua_nao_gera_um_alerta_por_leitura(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+        $servico = app(AlertaService::class);
+
+        foreach ([4.0, 4.1, 3.9, 4.2] as $valor) {
+            $servico->verificar($this->registrarLeitura($sensor, $valor));
+        }
+
+        $this->assertDatabaseCount('alertas', 1);
+
+        $alerta = Alerta::first();
+        $this->assertSame(4, $alerta->nu_ocorrencias);
+        $this->assertTrue($alerta->emCurso());
+        // A mensagem acompanha o valor mais recente.
+        $this->assertStringContainsString('4.2', $alerta->ds_mensagem);
+    }
+
+    public function test_email_sai_uma_vez_por_episodio_e_nao_por_leitura(): void
+    {
+        Mail::fake();
+
+        [$usuario, $lavoura, $sensor] = $this->cenarioComSensor();
+        $usuario->update(['fl_notificar_email_alerta' => true]);
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+        $servico = app(AlertaService::class);
+
+        foreach ([4.0, 4.1, 3.9] as $valor) {
+            $servico->verificar($this->registrarLeitura($sensor, $valor));
+        }
+
+        Mail::assertQueuedCount(1);
+    }
+
+    public function test_valor_de_volta_a_faixa_encerra_o_episodio(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+        $servico = app(AlertaService::class);
+
+        $servico->verificar($this->registrarLeitura($sensor, 4.0));
+        $servico->verificar($this->registrarLeitura($sensor, 6.2));
+
+        $this->assertFalse(Alerta::first()->emCurso());
+
+        // Desvio novo depois de normalizar abre outro alerta.
+        $servico->verificar($this->registrarLeitura($sensor, 4.0));
+        $this->assertDatabaseCount('alertas', 2);
+    }
+
+    public function test_valor_na_borda_da_faixa_nao_encerra_o_episodio(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+        $servico = app(AlertaService::class);
+
+        $servico->verificar($this->registrarLeitura($sensor, 5.0));
+        // Dentro da faixa, mas a 0,02 do mínimo: sem a histerese isso encerraria
+        // o episódio e a próxima leitura abriria outro, com novo e-mail.
+        $servico->verificar($this->registrarLeitura($sensor, 5.52));
+
+        $this->assertTrue(Alerta::first()->emCurso());
+    }
+
+    public function test_severidade_do_episodio_nao_regride(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+        $servico = app(AlertaService::class);
+
+        $servico->verificar($this->registrarLeitura($sensor, 4.5));
+        $this->assertSame('critical', Alerta::first()->tp_severidade);
+
+        $servico->verificar($this->registrarLeitura($sensor, 5.4));
+        $this->assertSame('critical', Alerta::first()->tp_severidade);
     }
 
     public function test_envia_email_quando_usuario_tem_notificacao_ativada(): void

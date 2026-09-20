@@ -132,6 +132,14 @@ function lerSerieDoCanvas(ctx) {
 }
 
 /**
+ * Número do gráfico com no máximo uma casa decimal, no formato pt-BR.
+ * O Chart.js calcula as marcas do eixo dividindo o intervalo, e numa faixa
+ * estreita (o pH varia entre 5,1 e 5,6) isso cai em ponto flutuante do tipo
+ * 5.140000000000001 — que ia direto pro eixo sem nenhuma formatação.
+ */
+const formatarNumero = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format;
+
+/**
  * Opções compartilhadas pelos gráficos do dashboard: eixo limpo, fonte
  * monoespaçada nos números (mesma dos medidores) e tooltip com a unidade.
  */
@@ -150,7 +158,7 @@ function opcoesGrafico(unidade) {
                 titleFont: { family: "'IBM Plex Mono', monospace", size: 11 },
                 bodyFont: { family: "'IBM Plex Mono', monospace", size: 13, weight: '600' },
                 callbacks: {
-                    label: (item) => item.parsed.y + unidade,
+                    label: (item) => formatarNumero(item.parsed.y) + unidade,
                 },
             },
         },
@@ -162,7 +170,7 @@ function opcoesGrafico(unidade) {
                 ticks: {
                     color: cinza,
                     font: { family: "'IBM Plex Mono', monospace", size: 11 },
-                    callback: (value) => value + unidade,
+                    callback: (value) => formatarNumero(value) + unidade,
                 },
             },
             x: {
