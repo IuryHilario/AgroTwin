@@ -1,12 +1,14 @@
-@extends('layouts.app')
+@extends('layouts.index')
 
 @section('title', 'Configurações - AgroTwin')
 
-@section('content')
+@section('page-content')
 
     <x-ui.section-header
         title="Configurações"
-        icon="fas fa-cog"
+        modulo="conta"
+        etapa="Configurações"
+        subtitle="Notificações por e-mail e propriedade exibida por padrão no dashboard."
     />
 
     <div class="grid grid-cols-12 gap-4">

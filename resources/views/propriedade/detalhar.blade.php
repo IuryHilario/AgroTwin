@@ -24,18 +24,18 @@
     </x-ui.detail-section>
 
     <x-ui.detail-section title="Condições Meteorológicas" icon="fas fa-cloud-sun">
-        @if($propriedade->ds_localizacao && $weatherData['success'])
+        @if($clima)
             <x-ui.detail-fields :fields="[
-                ['label' => 'Temperatura Atual', 'value' => $weatherData['data']['temperature'] . ' °C'],
-                ['label' => 'Sensação Térmica', 'value' => $weatherData['data']['feels_like'] . ' °C'],
-                ['label' => 'Umidade', 'value' => $weatherData['data']['humidity'] . ' %'],
-                ['label' => 'Descrição', 'value' => ucfirst($weatherData['data']['description'])],
-                ['label' => 'Velocidade do Vento', 'value' => $weatherData['data']['wind_speed'] . ' km/h'],
+                ['label' => 'Temperatura Atual', 'value' => $clima['temperatura'] . ' °C'],
+                ['label' => 'Sensação Térmica', 'value' => $clima['sensacao'] . ' °C'],
+                ['label' => 'Umidade do Ar', 'value' => $clima['umidade'] . ' %'],
+                ['label' => 'Condição', 'value' => $clima['descricao']],
+                ['label' => 'Vento', 'value' => $clima['vento_kmh'] . ' km/h'],
             ]" />
         @else
             <p class="text-sm text-muted">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                Cidade indisponível para consultas do tempo.
+                <i class="fas fa-circle-info mr-2"></i>
+                Clima indisponível — confira se a localização da propriedade tem o nome de uma cidade.
             </p>
         @endif
     </x-ui.detail-section>

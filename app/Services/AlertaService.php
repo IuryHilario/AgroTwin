@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Mail;
 
 class AlertaService
 {
+    /** Desvio (em relação à largura da faixa ideal) a partir do qual o alerta é crítico. */
+    private const DESVIO_CRITICO = 0.3;
+
     public function verificar(LeituraSensor $leitura): ?Alerta
     {
         $sensor = $leitura->sensor;
@@ -47,7 +50,7 @@ class AlertaService
         $alerta = Alerta::create([
             'id_sensor' => $sensor->id_sensor,
             'id_lavoura' => $sensor->id_lavoura,
-            'tp_severidade' => 'warning',
+            'tp_severidade' => $this->severidade($leitura->valor, $limite),
             'ds_mensagem' => $mensagem,
             'fl_lida' => false,
             'dt_alerta' => $leitura->dt_leitura,
@@ -56,6 +59,29 @@ class AlertaService
         $this->notificarPorEmail($alerta);
 
         return $alerta;
+    }
+
+    /**
+     * Quão grave é o desvio: um valor que passou um pouco do limite não é a
+     * mesma coisa que um que passou longe. A referência é a largura da faixa
+     * ideal; quando só um dos lados está configurado, usa-se 20% do próprio
+     * limite como referência.
+     */
+    private function severidade(float $valor, ConfiguracaoLimite $limite): string
+    {
+        $min = $limite->valor_min;
+        $max = $limite->valor_max;
+
+        $excedente = $min !== null && $valor < $min ? $min - $valor : $valor - $max;
+        $referencia = $min !== null && $max !== null
+            ? $max - $min
+            : abs($min ?? $max) * 0.2;
+
+        if ($referencia <= 0) {
+            return 'warning';
+        }
+
+        return $excedente / $referencia >= self::DESVIO_CRITICO ? 'critical' : 'warning';
     }
 
     private function notificarPorEmail(Alerta $alerta): void

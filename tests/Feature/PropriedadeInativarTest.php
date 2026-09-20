@@ -18,7 +18,7 @@ class PropriedadeInativarTest extends TestCase
 
         $response = $this->actingAs($usuario)
             ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
-            ->getJson("/propriedade/{$propriedade->id_propriedade}/inativar");
+            ->postJson("/propriedade/{$propriedade->id_propriedade}/inativar");
 
         $response->assertOk();
         $response->assertJson(['success' => true, 'message' => 'Inativado com Sucesso!!']);
@@ -26,7 +26,7 @@ class PropriedadeInativarTest extends TestCase
 
         $response = $this->actingAs($usuario)
             ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
-            ->getJson("/propriedade/{$propriedade->id_propriedade}/inativar");
+            ->postJson("/propriedade/{$propriedade->id_propriedade}/inativar");
 
         $response->assertJson(['success' => true, 'message' => 'Ativado com Sucesso!!']);
         $this->assertFalse($propriedade->refresh()->fl_inativo);
@@ -38,7 +38,7 @@ class PropriedadeInativarTest extends TestCase
         $propriedade = $this->criarPropriedade($usuario);
         $outroUsuario = $this->criarUsuario();
 
-        $response = $this->actingAs($outroUsuario)->get("/propriedade/{$propriedade->id_propriedade}/inativar");
+        $response = $this->actingAs($outroUsuario)->post("/propriedade/{$propriedade->id_propriedade}/inativar");
 
         $response->assertStatus(404);
         $this->assertFalse($propriedade->refresh()->fl_inativo);

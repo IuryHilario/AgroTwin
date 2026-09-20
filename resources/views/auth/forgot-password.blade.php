@@ -1,75 +1,26 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+@extends('layouts.auth')
 
-<head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Esqueci minha senha - AgroTwin</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+@section('title', 'Esqueci minha senha - AgroTwin')
+@section('cabecalho', 'Esqueci minha senha')
+@section('subtitulo', 'Informe seu e-mail e enviaremos um link para redefinir a senha.')
 
-    <script>
-        (function () {
-            const stored = localStorage.getItem('theme');
-            const isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.classList.toggle('dark', isDark);
-        })();
-    </script>
+@section('formulario')
+    <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-5">
+        @csrf
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="font-sans dark:bg-gray-950">
-    <div class="relative flex min-h-screen items-center justify-center p-5">
-        <div class="fixed inset-0 -z-20 bg-[length:400%_400%] bg-[linear-gradient(135deg,#4CAF50_0%,#8BC34A_25%,#CDDC39_50%,#FF9800_75%,#FF5722_100%)] animate-gradient-shift"></div>
-
-        <div class="relative z-10 w-full max-w-[450px]">
-            <div class="animate-slide-up rounded-[20px] border border-white/20 bg-white/95 p-10 shadow-[0_25px_45px_rgba(0,0,0,0.1)] backdrop-blur-md max-[480px]:p-6 dark:border-gray-700/50 dark:bg-gray-900/95">
-                <div class="mb-9 text-center">
-                    <div class="mb-4 flex items-center justify-center gap-4 max-[480px]:flex-col max-[480px]:gap-2.5">
-                        <i class="fas fa-key animate-logo-pulse text-5xl text-green-500 max-[480px]:text-4xl"></i>
-                        <h1 class="bg-gradient-to-br from-green-500 to-green-800 bg-clip-text text-3xl font-bold text-transparent max-[480px]:text-2xl dark:from-green-400 dark:to-green-600">Esqueci minha senha</h1>
-                    </div>
-                    <p class="text-sm text-muted">Digite seu email e enviaremos um link para redefinir sua senha.</p>
-                </div>
-
-                @if (session('success'))
-                    <div class="mb-5 rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                        {{ session('success') }}
-                    </div>
-                @endif
-
-                <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-5" autocomplete="off">
-                    @csrf
-
-                    <div class="flex flex-col gap-2">
-                        <label for="email" class="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-                            <i class="fas fa-envelope w-4 text-green-500"></i> Email
-                        </label>
-                        <input type="email" id="email" name="email" value="{{ old('email') }}" required autofocus class="form-control">
-                        @error('email')
-                            <span class="flex items-center gap-1.5 text-sm font-medium text-red-500">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <button type="submit" class="btn btn-primary mt-2 w-full normal-case">
-                        <i class="fas fa-paper-plane"></i>
-                        Enviar link de redefinição
-                    </button>
-
-                    <div class="mt-2 border-t border-gray-100 pt-5 text-center dark:border-gray-700">
-                        <p class="text-sm text-muted">
-                            <a href="{{ route('login') }}" class="font-medium text-green-600 hover:text-green-800 hover:underline dark:text-green-400 dark:hover:text-green-300">
-                                <i class="fas fa-arrow-left"></i> Voltar para o login
-                            </a>
-                        </p>
-                    </div>
-                </form>
-            </div>
+        <div class="entrada" style="animation-delay: 80ms">
+            <x-auth.campo name="email" label="E-mail" icone="fa-envelope" type="email" autocomplete="email" :autofocus="true" />
         </div>
-    </div>
-</body>
 
-</html>
+        <button type="submit" class="btn btn-primary entrada mt-1 w-full" style="animation-delay: 120ms">
+            <i class="fas fa-paper-plane"></i>
+            Enviar link de redefinição
+        </button>
+    </form>
+@endsection
+
+@section('rodape')
+    <a href="{{ route('login') }}" class="font-medium text-green-600 hover:underline dark:text-green-400">
+        <i class="fas fa-arrow-left-long mr-1 text-xs"></i>Voltar para o login
+    </a>
+@endsection

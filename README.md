@@ -61,8 +61,8 @@ Fornecer aos agricultores uma solução completa, acessível e de baixo custo pa
 - Interface simples e intuitiva, com tema claro/escuro
 
 ### 8. **Dados Climáticos**
-- Integração com a API OpenWeatherMap implementada no backend (`WeatherController`)
-- ⚠️ Ainda não está exposta em nenhuma tela do dashboard — endpoint pronto, front-end pendente
+- Clima atual da cidade da propriedade (OpenWeatherMap) no painel do dashboard e nos detalhes da propriedade
+- `ClimaService` com cache de 30 minutos e timeout curto: se a API falhar, a tela segue funcionando sem o bloco de clima
 
 ## 🛠️ Stack Tecnológico
 
@@ -102,7 +102,7 @@ Fornecer aos agricultores uma solução completa, acessível e de baixo custo pa
 - **Laravel Pint** - Code formatting
 
 ### Integrações
-- **OpenWeatherMap API** - Implementada no backend, não exposta na interface ainda
+- **OpenWeatherMap API** - Clima atual no dashboard e nos detalhes da propriedade
 
 ## 🏗️ Arquitetura IoT em Camadas
 
@@ -237,7 +237,7 @@ Regras condicionais avaliam
    MAIL_MAILER=log
    QUEUE_CONNECTION=database
 
-   # Opcional — dados climáticos (backend pronto, sem tela ainda)
+   # Opcional — clima atual no dashboard
    OPENWEATHER_API_KEY=sua_chave_api
    ```
 
@@ -287,6 +287,12 @@ php artisan migrate --force
 - [x] CRUDs completos (propriedades, lavouras, insumos, sensores)
 - [x] API REST de ingestão de leituras (autenticada, com rate limiting)
 - [x] Dashboard com gráficos e dados reais, por Propriedade/Lavoura
+- [x] Dashboard avalia cada leitura contra a faixa configurada da lavoura (medidores mín/máx)
+- [x] Recuperação de senha por e-mail e limite de tentativas no login (5/min)
+- [x] Relatório de insumo com exportação em PDF e envio por e-mail
+- [x] Telas de autenticação e dashboard redesenhadas (painel escuro de estação + leituras em monoespaçada)
+- [x] Listagens e formulários padronizados (estado vazio, selos de status, datas/números no padrão brasileiro)
+- [x] Clima atual (OpenWeather) no dashboard e exportação em PDF do relatório de sensores
 - [x] Regras condicionais de irrigação (automática e manual) + histórico
 - [x] Sistema de alertas e recomendações (persistidas)
 - [x] Notificação de alertas por e-mail (fila)
@@ -305,7 +311,6 @@ php artisan migrate --force
 - [ ] App mobile (React Native)
 - [ ] Conectividade LoRaWAN
 - [ ] Notificações push
-- [ ] Tela para os dados climáticos (backend já pronto)
 
 ## 📚 Documentação Acadêmica
 

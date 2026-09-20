@@ -28,6 +28,14 @@ trait Core
         ];
         $funcionalidades[] = $funcEditar;
 
+        $funcExcluir = [
+            'id' => 'excluir',
+            'nome' => 'Excluir',
+            'icone' => 'fa-trash',
+            'link' => route('sensores.destroy', $this->id_sensor),
+        ];
+        $funcionalidades[] = $funcExcluir;
+
         return $funcionalidades;
     }
 }

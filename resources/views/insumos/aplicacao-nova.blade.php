@@ -3,7 +3,7 @@
     title="Nova Aplicação de Insumo"
     icon="fas fa-spray-can"
     size="modal-lg"
-    :item="$aplicacao ?? null"
+    :item="$insumo ?? null"
     resourceName="insumo"
     :additionalButtons="[
         [
@@ -13,7 +13,7 @@
             'icon' => 'fas fa-arrow-left',
             'type' => 'button',
             'data-action' => 'voltar-aplicacao',
-            'data-url' => isset($aplicacao) ? route('insumos.aplicacao', $aplicacao->id_insumo) : '#'
+            'data-url' => isset($insumo) ? route('insumos.aplicacao', $insumo->id_insumo) : '#'
         ],
         [
             'tag' => 'button',
@@ -33,7 +33,7 @@
         ],
     ]"
 >
-    @if($aplicacao)
+    @if($insumo)
         <!-- Informações do Insumo -->
         <div class="mb-4 grid grid-cols-12 gap-4">
             <div class="card col-span-12 bg-subtle">
@@ -44,20 +44,20 @@
                     </h6>
                     <div class="grid grid-cols-12 gap-4 text-sm">
                         <div class="col-span-12 md:col-span-6">
-                            <strong>Nome:</strong> {{ $aplicacao->ds_nome }}
+                            <strong>Nome:</strong> {{ $insumo->ds_nome }}
                         </div>
                         <div class="col-span-12 md:col-span-6">
-                            <strong>Tipo:</strong> {{ $aplicacao->tp_insumo ? $aplicacao->tp_insumo->label() : 'Não informado' }}
+                            <strong>Tipo:</strong> {{ $insumo->tp_insumo ? $insumo->tp_insumo->label() : 'Não informado' }}
                         </div>
                         <div class="col-span-12 mt-2 md:col-span-6">
                             <strong>Estoque Disponível:</strong>
-                            <span class="rounded-full px-2 py-1 text-xs font-semibold text-white {{ $aplicacao->estoque_atual > 0 ? 'bg-green-600' : 'bg-red-600' }}">
-                                {{ number_format($aplicacao->estoque_atual, 2, ',', '.') }}
-                                {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}
+                            <span class="rounded-full px-2 py-1 text-xs font-semibold text-white {{ $insumo->estoque_atual > 0 ? 'bg-green-600' : 'bg-red-600' }}">
+                                {{ number_format($insumo->estoque_atual, 2, ',', '.') }}
+                                {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}
                             </span>
                         </div>
                         <div class="col-span-12 mt-2 md:col-span-6">
-                            <strong>Unidade:</strong> {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->label() : 'Não informada' }}
+                            <strong>Unidade:</strong> {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->label() : 'Não informada' }}
                         </div>
                     </div>
                 </div>
@@ -66,7 +66,7 @@
 
         <!-- Formulário de Nova Aplicação -->
         <x-form.form-modal
-            action="{{ route('insumos.aplicacao.store', $aplicacao->id_insumo) }}"
+            action="{{ route('insumos.aplicacao.store', $insumo->id_insumo) }}"
             method="POST"
             id="formNovaAplicacao"
             title="Registrar Nova Aplicação"
@@ -229,7 +229,7 @@
                 const dosagemInput = document.querySelector('input[name="dosagem_hectare"]');
                 const alertaEstoque = document.getElementById('alertaEstoqueInsuficiente');
                 const alertaCondicoes = document.getElementById('alertaCondicoesDesfavoraveis');
-                const estoqueDisponivel = {{ $aplicacao->estoque_atual }};
+                const estoqueDisponivel = {{ $insumo->estoque_atual }};
 
                 function calcularDosagem() {
                     const quantidade = parseFloat(quantidadeInput.value) || 0;

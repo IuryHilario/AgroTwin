@@ -19,3 +19,4 @@ use App\Http\Controllers\InsumoController;
     Route::get('/insumos/{id}', [InsumoController::class, 'show'])->name('insumos.show');
     Route::get('/insumos/{id}/edit', [InsumoController::class, 'telaEditar'])->name('insumos.edit');
     Route::put('/insumos/{id}', [InsumoController::class, 'update'])->name('insumos.update');
+    Route::delete('/insumos/{id}', [InsumoController::class, 'destroy'])->name('insumos.destroy');

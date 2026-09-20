@@ -6,17 +6,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Alerta;
+use App\Models\ConfiguracaoLimite;
+use App\Models\Insumo;
 use App\Services\SensorReadingService;
 use App\Services\RecomendacaoService;
+use App\Services\ClimaService;
 use App\Traits\SelecionaPropriedadeLavoura;
 
 class DashboardController extends Controller
 {
     use SelecionaPropriedadeLavoura;
 
+    /**
+     * Parâmetros exibidos no dashboard, na ordem de exibição. `tipo` é o
+     * TipoSensor — mesma chave das leituras e dos limites configurados por
+     * lavoura (tela Configurar Limites).
+     */
+    private const PARAMETROS = [
+        ['tipo' => 'umidade_solo', 'label' => 'Umidade do Solo', 'unidade' => '%', 'icone' => 'fa-droplet'],
+        ['tipo' => 'ph', 'label' => 'pH do Solo', 'unidade' => '', 'icone' => 'fa-flask'],
+        ['tipo' => 'temperatura', 'label' => 'Temperatura', 'unidade' => '°C', 'icone' => 'fa-temperature-half'],
+        ['tipo' => 'condutividade', 'label' => 'Condutividade', 'unidade' => 'µS/cm', 'icone' => 'fa-bolt'],
+        ['tipo' => 'nitrogenio', 'label' => 'Nitrogênio (N)', 'unidade' => 'ppm', 'icone' => 'fa-leaf'],
+        ['tipo' => 'fosforo', 'label' => 'Fósforo (P)', 'unidade' => 'ppm', 'icone' => 'fa-leaf'],
+        ['tipo' => 'potassio', 'label' => 'Potássio (K)', 'unidade' => 'ppm', 'icone' => 'fa-leaf'],
+    ];
+
     public function __construct(
         private SensorReadingService $leituraService,
-        private RecomendacaoService $recomendacaoService
+        private RecomendacaoService $recomendacaoService,
+        private ClimaService $climaService
     ) {
     }
 
@@ -41,7 +60,6 @@ class DashboardController extends Controller
         return view('dashboard.index', [
             'propriedades' => $propriedades,
             'selectedPropriedade' => $selectedPropriedade,
-            'getPropriedadeById' => $selectedPropriedade->id_propriedade,
             'lavouras' => $lavouras,
             'selectedLavoura' => $selectedLavoura,
             'dadosDashboard' => $dadosDashboard
@@ -56,21 +74,136 @@ class DashboardController extends Controller
     private function getDadosDashboard($propriedade, $lavoura)
     {
         $sensores = $this->sensoresDaSelecao($propriedade, $lavoura);
+        $ultimas = $this->ultimaLeituraPorTipo($sensores);
+        $indicadores = $this->montarIndicadores($ultimas, $lavoura);
 
         return [
-            'sensores' => $this->getDadosSensores($sensores),
             'alertas' => $this->getAlertasAtivos($sensores),
             'recomendacoes' => $lavoura ? $this->recomendacaoService->gerarParaLavoura($lavoura) : [],
-            'ultimasLeituras' => $this->getUltimasLeituras($sensores),
-            'sensoresStatus' => $sensores,
+            'ultimaLeitura' => collect($ultimas)->max('dt_leitura')?->format('H:i'),
+            'sensoresStatus' => $sensores->load('ultimaLeitura'),
+            'insumosEmAtencao' => $this->insumosEmAtencao(),
             'seriesTemporais' => $this->getSeriesTemporais($sensores),
+            'indicadores' => $indicadores,
+            'resumo' => $this->resumirIndicadores($indicadores),
+            'irrigacaoAtiva' => (bool) $lavoura?->fl_irrigacao_ativa,
+            'clima' => $this->climaService->atual($propriedade->ds_localizacao),
+        ];
+    }
+
+    /**
+     * Insumos que pedem uma providência: vencidos, vencendo nos próximos 30
+     * dias ou com estoque abaixo do mínimo. Os dados já estavam no banco e
+     * ninguém era avisado.
+     */
+    private function insumosEmAtencao(): Collection
+    {
+        return Insumo::where('id_usuario', Auth::id())
+            ->get()
+            ->map(function (Insumo $insumo) {
+                $situacao = match (true) {
+                    $insumo->vencido() => ['erro', 'Vencido em ' . $insumo->dt_validade->format('d/m/Y')],
+                    $insumo->estoque_abaixo_minimo => ['alerta', 'Estoque abaixo do mínimo'],
+                    $insumo->venceEmBreve() => ['alerta', 'Vence em ' . $insumo->dt_validade->format('d/m/Y')],
+                    default => null,
+                };
+
+                return $situacao ? ['insumo' => $insumo, 'tom' => $situacao[0], 'texto' => $situacao[1]] : null;
+            })
+            ->filter()
+            ->sortBy(fn (array $item) => $item['tom'] === 'erro' ? 0 : 1)
+            ->take(5)
+            ->values();
+    }
+
+    /**
+     * Junta a última leitura de cada parâmetro com o limite configurado para a
+     * lavoura, para o dashboard mostrar o valor já julgado (dentro/fora da
+     * faixa) em vez de um número solto.
+     */
+    private function montarIndicadores(array $ultimas, $lavoura): Collection
+    {
+        $limites = $lavoura ? ConfiguracaoLimite::porLavoura($lavoura->id_lavoura) : collect();
+
+        return collect(self::PARAMETROS)->map(function (array $parametro) use ($ultimas, $limites) {
+            $valor = $ultimas[$parametro['tipo']]->valor ?? null;
+            $limite = $limites[$parametro['tipo']] ?? null;
+
+            return $parametro + [
+                'valor' => $valor,
+                'min' => $limite?->valor_min,
+                'max' => $limite?->valor_max,
+                'status' => $this->statusDoParametro($valor, $limite),
+                'posicao' => $this->posicaoNaFaixa($valor, $limite),
+            ];
+        });
+    }
+
+    /**
+     * ok = dentro da faixa · fora = estourou um dos limites ·
+     * sem_limite = tem leitura mas ninguém configurou a faixa ainda ·
+     * sem_leitura = nenhum sensor desse tipo reportou.
+     */
+    private function statusDoParametro(?float $valor, ?ConfiguracaoLimite $limite): string
+    {
+        if ($valor === null) {
+            return 'sem_leitura';
+        }
+
+        if (!$limite || ($limite->valor_min === null && $limite->valor_max === null)) {
+            return 'sem_limite';
+        }
+
+        $abaixo = $limite->valor_min !== null && $valor < $limite->valor_min;
+        $acima = $limite->valor_max !== null && $valor > $limite->valor_max;
+
+        return ($abaixo || $acima) ? 'fora' : 'ok';
+    }
+
+    /**
+     * Posição do valor (0-100%) na régua do medidor. A régua vai um pouco além
+     * dos limites (20% da faixa para cada lado) para que um valor fora da faixa
+     * ainda apareça dentro da barra, e não grudado na ponta.
+     * Só faz sentido quando a lavoura tem mínimo E máximo configurados.
+     */
+    private function posicaoNaFaixa(?float $valor, ?ConfiguracaoLimite $limite): ?float
+    {
+        if ($valor === null || !$limite || $limite->valor_min === null || $limite->valor_max === null) {
+            return null;
+        }
+
+        $faixa = $limite->valor_max - $limite->valor_min;
+
+        if ($faixa <= 0) {
+            return null;
+        }
+
+        $escalaInicio = $limite->valor_min - ($faixa * 0.2);
+        $posicao = (($valor - $escalaInicio) / ($faixa * 1.4)) * 100;
+
+        return round(max(0, min(100, $posicao)), 1);
+    }
+
+    private function resumirIndicadores(Collection $indicadores): array
+    {
+        $fora = $indicadores->where('status', 'fora')->count();
+        $ok = $indicadores->where('status', 'ok')->count();
+
+        return [
+            'fora' => $fora,
+            'ok' => $ok,
+            // Só conta como avaliado o parâmetro que tem leitura E faixa configurada —
+            // sem os dois não dá para dizer se está bom ou ruim.
+            'avaliados' => $ok + $fora,
+            'semLimite' => $indicadores->where('status', 'sem_limite')->count(),
+            'comLeitura' => $indicadores->whereNotNull('valor')->count(),
         ];
     }
 
     /**
      * Série diária (últimos 7 dias) de umidade e pH, para os gráficos do
      * dashboard. Usa o primeiro sensor de cada tipo encontrado entre os
-     * sensores exibidos (mesmo critério de getDadosSensores).
+     * sensores exibidos (mesmo critério de ultimaLeituraPorTipo).
      */
     private function getSeriesTemporais($sensores): array
     {
@@ -100,61 +233,26 @@ class DashboardController extends Controller
     }
 
     /**
-     * Última leitura conhecida de cada parâmetro monitorado (umidade, pH, temperatura, NPK),
-     * considerando o sensor mais recentemente atualizado de cada tipo na propriedade.
+     * Leitura mais recente de cada tipo de sensor (umidade, pH, N, P, K...),
+     * indexada pelo tipo. Se a lavoura tiver dois sensores do mesmo tipo,
+     * vale o que reportou por último.
+     *
+     * @return array<string, \App\Models\LeituraSensor>
      */
-    private function getDadosSensores($sensores)
+    private function ultimaLeituraPorTipo($sensores): array
     {
-        $ultimaPorTipo = [];
+        $ultimas = [];
 
         foreach ($sensores as $sensor) {
-            if (!$sensor->tp_sensor) {
-                continue;
-            }
+            $leitura = $sensor->tp_sensor ? $this->leituraService->ultimaLeitura($sensor) : null;
+            $tipo = $sensor->tp_sensor?->value;
 
-            $ultima = $this->leituraService->ultimaLeitura($sensor);
-            if (!$ultima) {
-                continue;
-            }
-
-            $tipo = $sensor->tp_sensor->value;
-            if (!isset($ultimaPorTipo[$tipo]) || $ultima->dt_leitura->gt($ultimaPorTipo[$tipo]->dt_leitura)) {
-                $ultimaPorTipo[$tipo] = $ultima;
+            if ($leitura && (!isset($ultimas[$tipo]) || $leitura->dt_leitura->gt($ultimas[$tipo]->dt_leitura))) {
+                $ultimas[$tipo] = $leitura;
             }
         }
 
-        return [
-            'umidade' => $ultimaPorTipo['umidade_solo']->valor ?? null,
-            'ph' => $ultimaPorTipo['ph']->valor ?? null,
-            'temperatura' => $ultimaPorTipo['temperatura']->valor ?? null,
-            'nitrogenio' => $ultimaPorTipo['nitrogenio']->valor ?? null,
-            'fosforo' => $ultimaPorTipo['fosforo']->valor ?? null,
-            'potassio' => $ultimaPorTipo['potassio']->valor ?? null,
-            'condutividade' => $ultimaPorTipo['condutividade']->valor ?? null,
-            'npk' => $this->calcularNpk($ultimaPorTipo),
-        ];
-    }
-
-    /**
-     * O sensor físico (7 em 1) reporta N, P e K separadamente, nunca um valor
-     * "npk" combinado. Usa a média dos três quando disponíveis; um sensor do
-     * tipo 'npk' explícito (ex.: simulação) tem prioridade se existir.
-     */
-    private function calcularNpk(array $ultimaPorTipo): ?float
-    {
-        if (isset($ultimaPorTipo['npk'])) {
-            return $ultimaPorTipo['npk']->valor;
-        }
-
-        $macronutrientes = collect(['nitrogenio', 'fosforo', 'potassio'])
-            ->map(fn ($tipo) => $ultimaPorTipo[$tipo]->valor ?? null)
-            ->filter(fn ($valor) => $valor !== null);
-
-        if ($macronutrientes->isEmpty()) {
-            return null;
-        }
-
-        return round($macronutrientes->avg(), 2);
+        return $ultimas;
     }
 
     /**
@@ -169,25 +267,5 @@ class DashboardController extends Controller
             ->orderByDesc('dt_alerta')
             ->limit(5)
             ->get();
-    }
-
-    /**
-     * Horário da leitura mais recente entre todos os sensores exibidos.
-     */
-    private function getUltimasLeituras($sensores)
-    {
-        $ultimaGeral = null;
-
-        foreach ($sensores as $sensor) {
-            $ultima = $this->leituraService->ultimaLeitura($sensor);
-            if ($ultima && (!$ultimaGeral || $ultima->dt_leitura->gt($ultimaGeral))) {
-                $ultimaGeral = $ultima->dt_leitura;
-            }
-        }
-
-        return [
-            'ultima_atualizacao' => $ultimaGeral?->format('H:i'),
-            'status_geral' => $sensores->isEmpty() ? 'sem_sensores' : 'healthy',
-        ];
     }
 }

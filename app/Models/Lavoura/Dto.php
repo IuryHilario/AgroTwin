@@ -7,16 +7,10 @@
 
 namespace App\Models\Lavoura;
 
-use App\Entity\LavouraEntity;
 use App\Entity\UsuarioEntity;
 
 trait Dto
 {
-    public static function getById($id)
-    {
-        return LavouraEntity::getLavouraById(self::query(), $id)->first();
-    }
-
     public function getDetalhesFormatados()
     {
         $detalhes = [];

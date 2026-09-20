@@ -18,6 +18,7 @@ npm run dev                # Compilação de assets via Vite
 php artisan test                              # Todos os testes
 php artisan test --filter=NomeDoTest          # Teste específico
 composer run test                             # Limpa config cache antes de rodar
+# Os testes usam SQLite em memória: o PHP precisa da extensão pdo_sqlite habilitada
 
 # Formatação de código
 ./vendor/bin/pint                             # Formatar todos os arquivos PHP
@@ -101,10 +102,39 @@ Enums existentes: `TipoInsumo`, `TipoUnidadeMedida`, `TipoMovimentacao`, `TipoSo
 
 O layout (`resources/views/layouts/app.blade.php`) usa Tailwind CSS v4 (via `@tailwindcss/vite`, importado em `resources/css/app.css`) e Alpine.js 3 (CDN) como única stack de estilo/interatividade — sem Bootstrap ou Material Design Lite. Font Awesome 6 (ícones) e Chart.js seguem via CDN. Classes de componente reutilizadas em muitas telas (`.btn`, `.btn-primary`, `.card`, `.form-control` etc.) são definidas uma única vez em `app.css` via `@layer components` — reaproveite-as em vez de repetir sequências de utilitários. Alpine.js controla a sidebar e os modais (`x-show`/`x-transition` em `<x-ui.modal-funcional>`); a lógica de fetch/injeção de HTML dos modais fica em `resources/js/modal.js`.
 
-Componentes Blade disponíveis:
-- `<x-ui.responsive-table-card>` — tabela que colapsa para cards no mobile
-- `<x-ui.section-header>` — cabeçalho de página com título e ações
-- `<x-form.input>`, `<x-form.select>`, `<x-form.button>`, `<x-form.form>` — primitivos de formulário
+Componentes Blade disponíveis (todos anônimos, com `@props` declarados — não existem mais classes em `app/View/Components`):
+- `<x-ui.responsive-table-card>` — listagem: tabela no desktop, cards no mobile. Quando a lista vem vazia, renderiza um estado vazio; personalize com `vazioIcone`, `vazioTitulo`, `vazioTexto`, `vazioRota` e `vazioAcao`
+- `<x-ui.celula>` — formata o valor de uma coluna da listagem conforme `'tipo'` (ver abaixo); usado pela tabela e pelos cards
+- `<x-ui.acoes-linha>` — botões de ação da linha (3 visíveis, o resto no menu "Mais ações"); lê `$item->setFuncionalidades()`
+- `<x-ui.selo tom="ok|alerta|erro|info|neutro">` — selo de status
+- `<x-ui.section-header>` — cabeçalho das telas internas. `modulo` (propriedades, lavouras, insumos, sensores, alertas, recomendacoes, conta) define cor, ícone e rótulo — a mesma identidade na listagem, no cadastro e na edição. Aceita `etapa` ("Cadastro"/"Edição"), `subtitle`, `stats` (números rápidos), `acao` (botão principal; no mobile ele vira o botão flutuante) e `buttons`
+- `<x-form.form>`, `<x-form.form-modal>`, `<x-form.input>`, `<x-form.select>` — formulários. Input e select repassam atributos extras (`step`, `min`, `max`, `readonly`…) ao elemento e aceitam `ajuda` (texto de apoio)
+- `<x-auth.campo>` — campo das telas de autenticação (rótulo + input + olho de senha + erro)
+
+Colunas da listagem (`:arTableHead`): `['label' => …, 'key' => …]` mais, opcionalmente:
+- `'tipo'` — `texto` (padrão; enum vira `label()`), `data`, `data_hora`, `numero` (com `'casas'` e `'sufixo'`), `status` (selo colorido para ativo/inativo/colhida/encerrada e warning/critical/info), `booleano` (com `'rotuloSim'`, `'rotuloNao'`, `'tomSim'`, `'tomNao'`)
+- `'destaque' => true` — coluna principal em negrito
+- Valor vazio aparece como "—"; datas e números usam o padrão brasileiro (`App\Utils\Util`)
+
+Mensagens de retorno (`with('success'|'info'|'error', …)`) aparecem como toast no canto da tela, renderizado pelo `layouts/app`. Formulários AJAX não passam por ele: o `modal.js` mostra o próprio resultado.
+
+### Layouts
+
+- `layouts/app.blade.php` — shell autenticado (sidebar, topbar, tema). Use via `@extends` + `@section('content')`
+- `layouts/index.blade.php` — estende o `app`, aplica o container `max-w-[1400px]` e o botão flutuante de criar. Listagens e formulários de tela cheia usam este, com `@section('page-content')` e um bloco `@php $fabRoute / $fabText @endphp`
+- `layouts/auth.blade.php` — telas públicas (login, cadastro, esqueci/redefinir senha). Split-screen com o painel escuro à esquerda; as telas preenchem `@section('cabecalho')`, `subtitulo`, `formulario` e `rodape`
+
+### Linguagem visual
+
+Duas superfícies distintas, e a escolha entre elas é intencional:
+
+- **Painel escuro (`.painel-estacao`)** — usado no topo do dashboard e dos relatórios, e no lado esquerdo das telas de autenticação. Escuro nos dois temas, com malha de pontos; é a leitura "de instrumento" da estação.
+- **Superfícies claras** (`.surface`, `.card`) — o resto da interface, que acompanha o tema claro/escuro.
+
+Complementos:
+- `.font-readout` (IBM Plex Mono, dígitos tabulares) em valores de sensor, faixas e horários. Inter continua na interface.
+- `.medidor-trilho` / `.medidor-faixa` / `.medidor-marcador` — medidor que posiciona a leitura dentro da faixa configurada para a lavoura.
+- `.entrada` — entrada escalonada das telas de autenticação (combine com `style="animation-delay: …"`); respeita `prefers-reduced-motion`.
 
 ### Banco de dados
 
@@ -125,8 +155,9 @@ Migrations customizadas ficam em `database/migrations/custom/`.
 
 ### Checklist antes de commitar
 
-- [ ] Toda query filtra por `id_usuario` (multi-tenant)
+- [ ] Toda query filtra por `id_usuario` (multi-tenant) — em controller, use `buscarDoUsuario()`/`consultaDoUsuario()` do trait `EscopoDoUsuario`, nunca `Model::findOrFail($id)` puro
 - [ ] `id_usuario` vem de `Auth::id()`, nunca do `$request`
+- [ ] Ação que muda estado é POST/PUT/DELETE, nunca GET
 - [ ] Usa Entity para helpers de query
 - [ ] Usa Form Request para validação
 - [ ] `@csrf` em todos os forms
@@ -135,6 +166,49 @@ Migrations customizadas ficam em `database/migrations/custom/`.
 
 ### Status atual (referência)
 
-Módulos completos: Autenticação, Propriedades, Insumos (CRUD + estoque + aplicação).
-Parciais: Lavouras (sem delete), Sensores (cadastro somente), Dashboard (dados mock).
-Não iniciados: MQTT, IA/Recomendações, Alertas, Relatórios avançados, API REST.
+**Prontos:** Autenticação (login, cadastro, recuperação de senha, throttle de 5 tentativas/min),
+Propriedades, Lavouras, Insumos (CRUD + estoque + aplicação + relatório com PDF e e-mail),
+Sensores (CRUD + token de dispositivo + detecção de sensor mudo pela última leitura), Dashboard (dados reais, avaliados contra as faixas da
+lavoura), Alertas, Recomendações por regras condicionais, Irrigação (automática e manual, com
+histórico), Relatórios de sensores — diagnóstico do solo com índice de saúde, situação por parâmetro,
+tendência e ações sugeridas (`DiagnosticoSoloService`), com exportação em PDF —, API REST de ingestão (autenticada por
+token + rate limiting), Clima atual via OpenWeather (`ClimaService`, com cache de 30 min) no dashboard e
+nos detalhes da propriedade.
+
+**Parciais:**
+- Testes — cobrem API de sensor, alertas (serviço e tela), irrigação, recomendações, diagnóstico dos
+  relatórios, limites por cultura, busca/paginação e isolamento multi-tenant; não cobrem auth
+- Firmware — `firmware/esp32-solo-7em1/` existe; o `esp32-irrigacao/` citado no README foi removido no commit `7005192`
+
+**Não iniciados:** MQTT (hoje é REST direto), InfluxDB (hoje é MariaDB), TLS no dispositivo,
+Deep Sleep no ESP32, papéis admin/usuário, 2FA, log de auditoria, Machine Learning, app mobile.
+
+> MQTT e InfluxDB constam na proposta original do TCC. O desvio para REST/MariaDB está
+> justificado no README — confirme com o orientador antes de investir tempo neles.
+
+### Padrões transversais das telas
+
+- **Escopo por usuário** — `App\Traits\EscopoDoUsuario` (usado pelo `Controller` base): `consultaDoUsuario($model)`
+  devolve a query já filtrada e `buscarDoUsuario($model, $id)` devolve o registro ou 404. Sensores e lavouras
+  herdam o dono da propriedade; propriedades e insumos têm `id_usuario` próprio.
+- **Listagens** — o `index()` do `Controller` base pagina (`POR_PAGINA = 15`), aplica busca por `$colunasBusca`
+  e faz eager loading por `$eagerLoad`. Os números do cabeçalho vêm de `estatisticas()` no controller, não da
+  view: com paginação, contar na coleção daria só a página atual.
+- **Variável singular das views** — `$singular` no controller (`'sensor'`, `'recomendacao'`…). Não existe
+  singularização automática: "sensores"/"recomendacoes" não viram "sensor"/"recomendacao" por regra.
+- **Ações de estado** — rota POST/DELETE + `data-action`/`data-url` no elemento; o `modal.js` pede confirmação
+  e envia com `X-CSRF-TOKEN`. Casos existentes: `excluir`, `inativar`, `ativar`, `marcar-como-lido`,
+  `marcar-todos-lidos`, `irrigar`, `parar-irrigacao`.
+- **Faixas ideais** — `App\Support\FaixasSugeridas` traz valores de referência por cultura para a tela de
+  limites, com preenchimento em um clique. Sem faixa configurada, alertas, dashboard e relatório ficam cegos.
+- **Telas de modal abertas direto** — `responderView()` devolve JSON no AJAX e, na navegação normal,
+  embrulha a mesma view em `layouts.pagina-modal`. Sem isso, abrir `/lavouras/1/limites` (ou qualquer
+  `detalhar`) pela URL entregava o HTML do modal sem layout nem CSS.
+- **Componentes de listagem** — `<x-ui.responsive-table-card>` recebe o paginador e a busca; `<x-ui.celula>`
+  formata a coluna pelo `tipo` (inclui `conexao`, `validade` e `estoque`); `<x-ui.paginacao>` e `<x-ui.busca>`
+  aparecem sozinhos a partir dessas props.
+
+### Pontos de atenção conhecidos
+
+- `MAIL_MAILER=log` em desenvolvimento: recuperação de senha, alertas e relatório por e-mail só caem em `storage/logs/laravel.log`
+- O token do sensor fica em texto puro na coluna `sensores.token` — decisão consciente, para poder consultá-lo no banco ao configurar o ESP32 sem arriscar invalidá-lo por engano

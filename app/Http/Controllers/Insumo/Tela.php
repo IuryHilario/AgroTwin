@@ -9,136 +9,80 @@ use App\Services\InsumoRelatorioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 
-
 trait Tela
 {
     public function telaInserir()
     {
-        $tiposInsumo = TipoInsumo::cases();
-        $unidadesMedida = TipoUnidadeMedida::cases();
-
-        return view('insumos.inserir', compact('tiposInsumo', 'unidadesMedida'));
+        return view('insumos.inserir', [
+            'tiposInsumo' => TipoInsumo::cases(),
+            'unidadesMedida' => TipoUnidadeMedida::cases(),
+        ]);
     }
 
     public function telaEditar($id)
     {
-        $insumo = $this->insumoModel::findOrFail($id);
-
-        if ($insumo->id_usuario !== Auth::id()) {
-            return redirect()->route('insumos.index')->with('error', 'Acesso negado.');
-        }
-
-        return view('insumos.edit', compact('insumo'));
+        return view('insumos.edit', ['insumo' => $this->buscarDoUsuario($this->model, $id)]);
     }
 
     public function telaEstoque($id)
     {
-        $insumo = $this->insumoModel::where('id_insumo', $id)
-                         ->where('id_usuario', Auth::id())
-                         ->with(['movimentacoes' => function($query) {
-                             $query->orderBy('dt_movimentacao', 'desc')
-                                   ->orderBy('created_at', 'desc')
-                                   ->limit(10);
-                         }])
-                         ->firstOrFail();
+        $insumo = $this->consultaDoUsuario($this->model)
+            ->with(['movimentacoes' => function ($query) {
+                $query->orderBy('dt_movimentacao', 'desc')
+                      ->orderBy('created_at', 'desc')
+                      ->limit(10);
+            }])
+            ->where('id_insumo', $id)
+            ->firstOrFail();
 
-        if (request()->expectsJson()) {
-            $html = view('insumos.estoque', compact('insumo'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return $this->handleCustomFunction('estoque', $id);
+        return $this->responderView('insumos.estoque', compact('insumo'), $insumo);
     }
 
     public function telaEstoqueNovo($id)
     {
-        $insumo = $this->insumoModel::where('id_insumo', $id)
-                         ->where('id_usuario', Auth::id())
-                         ->firstOrFail();
+        $insumo = $this->buscarDoUsuario($this->model, $id);
 
-        if (request()->expectsJson()) {
-            $html = view('insumos.estoque-novo', compact('insumo'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return view('insumos.estoque-novo', compact('insumo'));
+        return $this->responderView('insumos.estoque-novo', compact('insumo'), $insumo);
     }
 
     public function telaAplicacao($id)
     {
-        $aplicacao = $this->insumoModel->where('id_insumo', $id)
-                          ->where('id_usuario', Auth::id())
-                          ->with(['getAplicacoes' => function($query) {
-                              $query->orderBy('dt_aplicacao', 'desc')
-                                    ->orderBy('created_at', 'desc');
-                          }])
-                          ->firstOrFail();
+        $insumo = $this->consultaDoUsuario($this->model)
+            ->with(['getAplicacoes' => function ($query) {
+                $query->orderBy('dt_aplicacao', 'desc')->orderBy('created_at', 'desc');
+            }])
+            ->where('id_insumo', $id)
+            ->firstOrFail();
 
-        if (request()->expectsJson()) {
-            $html = view('insumos.aplicacao', compact('aplicacao'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return $this->handleCustomFunction('aplicacao', $id);
+        return $this->responderView('insumos.aplicacao', compact('insumo'), $insumo);
     }
 
     public function telaAplicacaoNova($id)
     {
-        $aplicacao = $this->insumoModel::where('id_insumo', $id)
-                          ->where('id_usuario', Auth::id())
-                          ->firstOrFail();
-
+        $insumo = $this->buscarDoUsuario($this->model, $id);
         $lavouras = Lavoura::where('id_usuario', Auth::id())->get();
 
-        if (request()->expectsJson()) {
-            $html = view('insumos.aplicacao-nova', compact('aplicacao', 'lavouras'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
-        }
-
-        return view('insumos.aplicacao-nova', compact('aplicacao', 'lavouras'));
+        return $this->responderView('insumos.aplicacao-nova', compact('insumo', 'lavouras'), $insumo);
     }
 
     public function telaRelatorio($id, InsumoRelatorioService $relatorioService)
     {
         [$insumo, $relatorio] = $this->buscarRelatorio($id, $relatorioService);
 
-        if (request()->expectsJson()) {
-            $html = view('insumos.relatorio', compact('insumo', 'relatorio'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html,
-            ]);
-        }
-
-        return view('insumos.relatorio', compact('insumo', 'relatorio'));
+        return $this->responderView('insumos.relatorio', compact('insumo', 'relatorio'), $insumo);
     }
 
     public function baixarRelatorioPdf($id, InsumoRelatorioService $relatorioService)
     {
         [$insumo, $relatorio] = $this->buscarRelatorio($id, $relatorioService);
 
-        $pdf = Pdf::loadView('insumos.relatorio-pdf', compact('insumo', 'relatorio'));
-
-        return $pdf->download("relatorio-{$insumo->ds_nome}.pdf");
+        return Pdf::loadView('insumos.relatorio-pdf', compact('insumo', 'relatorio'))
+            ->download("relatorio-{$insumo->ds_nome}.pdf");
     }
 
     private function buscarRelatorio($id, InsumoRelatorioService $relatorioService): array
     {
-        $insumo = $this->insumoModel::where('id_insumo', $id)
-            ->where('id_usuario', Auth::id())
-            ->firstOrFail();
+        $insumo = $this->buscarDoUsuario($this->model, $id);
 
         return [$insumo, $relatorioService->gerar($insumo)];
     }

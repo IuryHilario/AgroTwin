@@ -17,7 +17,7 @@ trait Crud
 
     public function update(UpdateLavouraRequest $request, $id)
     {
-        $lavoura = $this->LavouraModel::findOrFail($id);
+        $lavoura = $this->buscarDoUsuario($this->model, $id);
         $lavoura->alterar($this->idUsuario, $request->validated());
 
         return redirect()->route('lavouras.index')
@@ -26,10 +26,7 @@ trait Crud
 
     public function destroy($id)
     {
-        $lavoura = $this->LavouraModel::whereHas('propriedade', function ($query) {
-            $query->where('id_usuario', $this->idUsuario);
-        })->findOrFail($id);
-
+        $lavoura = $this->buscarDoUsuario($this->model, $id);
         $lavoura->delete();
 
         if (request()->ajax()) {
