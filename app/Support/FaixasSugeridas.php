@@ -15,6 +15,10 @@ use Illuminate\Support\Str;
  * São valores de partida de literatura agronômica geral, para solo. Servem
  * como sugestão editável, não substituem análise de solo nem recomendação de
  * agrônomo — a tela deixa isso explícito.
+ *
+ * Atenção ao que cada parâmetro mede: 'temperatura' aqui é a do SOLO, lida pela
+ * sonda, não a do ar. Faixas de crescimento aéreo (alface 15–24 °C, por exemplo)
+ * ficariam permanentemente violadas num solo de cerrado.
  */
 class FaixasSugeridas
 {
@@ -26,7 +30,7 @@ class FaixasSugeridas
             'rotulo' => 'Alface',
             'faixas' => [
                 'umidade_solo' => [60, 80],
-                'temperatura' => [15, 24],
+                'temperatura' => [18, 28],
                 'ph' => [6.0, 6.8],
                 'nitrogenio' => [20, 40],
                 'fosforo' => [15, 30],
@@ -39,7 +43,7 @@ class FaixasSugeridas
             'rotulo' => 'Tomate',
             'faixas' => [
                 'umidade_solo' => [60, 80],
-                'temperatura' => [18, 27],
+                'temperatura' => [18, 30],
                 'ph' => [5.5, 6.8],
                 'nitrogenio' => [30, 60],
                 'fosforo' => [20, 40],
@@ -52,7 +56,7 @@ class FaixasSugeridas
             'rotulo' => 'Soja',
             'faixas' => [
                 'umidade_solo' => [50, 75],
-                'temperatura' => [20, 30],
+                'temperatura' => [20, 32],
                 'ph' => [5.5, 6.5],
                 'nitrogenio' => [15, 30],
                 'fosforo' => [10, 20],
@@ -65,7 +69,7 @@ class FaixasSugeridas
             'rotulo' => 'Milho',
             'faixas' => [
                 'umidade_solo' => [55, 75],
-                'temperatura' => [20, 30],
+                'temperatura' => [20, 32],
                 'ph' => [5.5, 6.5],
                 'nitrogenio' => [25, 50],
                 'fosforo' => [12, 25],
@@ -78,7 +82,7 @@ class FaixasSugeridas
             'rotulo' => 'Feijão',
             'faixas' => [
                 'umidade_solo' => [55, 75],
-                'temperatura' => [18, 28],
+                'temperatura' => [18, 30],
                 'ph' => [5.5, 6.5],
                 'nitrogenio' => [20, 40],
                 'fosforo' => [12, 25],
@@ -91,7 +95,7 @@ class FaixasSugeridas
             'rotulo' => 'Café',
             'faixas' => [
                 'umidade_solo' => [50, 70],
-                'temperatura' => [18, 26],
+                'temperatura' => [18, 28],
                 'ph' => [5.0, 6.0],
                 'nitrogenio' => [25, 50],
                 'fosforo' => [10, 20],
@@ -104,7 +108,7 @@ class FaixasSugeridas
             'rotulo' => 'Cana-de-açúcar',
             'faixas' => [
                 'umidade_solo' => [50, 75],
-                'temperatura' => [20, 32],
+                'temperatura' => [20, 34],
                 'ph' => [5.5, 6.5],
                 'nitrogenio' => [20, 45],
                 'fosforo' => [10, 20],
@@ -117,7 +121,7 @@ class FaixasSugeridas
             'rotulo' => 'Hortaliças em geral',
             'faixas' => [
                 'umidade_solo' => [55, 80],
-                'temperatura' => [18, 28],
+                'temperatura' => [18, 30],
                 'ph' => [5.5, 6.8],
                 'nitrogenio' => [20, 40],
                 'fosforo' => [15, 30],

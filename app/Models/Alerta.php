@@ -26,6 +26,12 @@ class Alerta extends Model
         return $this->belongsTo(Lavoura::class, 'id_lavoura', 'id_lavoura');
     }
 
+    /** Episódio ainda aberto: o parâmetro não voltou para a faixa. */
+    public function emCurso(): bool
+    {
+        return $this->dt_normalizado === null;
+    }
+
     public function marcarComoLido(): void
     {
         $this->update(['fl_lida' => true]);

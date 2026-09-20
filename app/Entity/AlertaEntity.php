@@ -13,15 +13,22 @@ class AlertaEntity
     public const FILLABLE = [
         'id_sensor',
         'id_lavoura',
+        'tp_direcao',
         'tp_severidade',
+        'nu_ocorrencias',
         'ds_mensagem',
         'fl_lida',
         'dt_alerta',
+        'dt_ultima_ocorrencia',
+        'dt_normalizado',
     ];
 
     public const CASTS = [
         'fl_lida' => 'boolean',
+        'nu_ocorrencias' => 'integer',
         'dt_alerta' => 'datetime',
+        'dt_ultima_ocorrencia' => 'datetime',
+        'dt_normalizado' => 'datetime',
     ];
 
     public static function getPorUsuario(Builder $query, $idUsuario)

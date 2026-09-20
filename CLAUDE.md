@@ -199,6 +199,14 @@ Deep Sleep no ESP32, papéis admin/usuário, 2FA, log de auditoria, Machine Lear
 - **Ações de estado** — rota POST/DELETE + `data-action`/`data-url` no elemento; o `modal.js` pede confirmação
   e envia com `X-CSRF-TOKEN`. Casos existentes: `excluir`, `inativar`, `ativar`, `marcar-como-lido`,
   `marcar-todos-lidos`, `irrigar`, `parar-irrigacao`.
+- **Alerta é episódio, não leitura** — `AlertaService` abre um alerta quando o parâmetro sai da faixa,
+  acumula `nu_ocorrencias` enquanto continuar fora e preenche `dt_normalizado` quando volta (com 5% de
+  histerese, senão um valor oscilando na borda reabriria o episódio a cada leitura). O e-mail sai só na
+  abertura. Uma linha por leitura significaria ~48 alertas/dia por parâmetro fora da faixa.
+  `RecomendacaoService` segue a mesma ideia com uma janela de 12h para texto idêntico.
+- **Números em gráfico** — sempre pelo `formatarNumero` (`Intl.NumberFormat pt-BR`, 1 casa). O Chart.js
+  calcula as marcas do eixo dividindo o intervalo e entrega coisas como `5.1000000000000005`; concatenar
+  o valor cru com a unidade jogava isso na tela.
 - **Faixas ideais** — `App\Support\FaixasSugeridas` traz valores de referência por cultura para a tela de
   limites, com preenchimento em um clique. Sem faixa configurada, alertas, dashboard e relatório ficam cegos.
 - **Telas de modal abertas direto** — `responderView()` devolve JSON no AJAX e, na navegação normal,
