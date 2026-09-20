@@ -82,6 +82,28 @@ class AlertaServiceTest extends TestCase
         $this->assertStringContainsString('acima do limite máximo', $alerta->ds_mensagem);
     }
 
+    public function test_desvio_pequeno_gera_alerta_de_atencao(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+
+        // 0,15 fora numa faixa de 1,5 de largura: 10% de desvio.
+        $alerta = app(AlertaService::class)->verificar($this->registrarLeitura($sensor, 7.15));
+
+        $this->assertSame('warning', $alerta->tp_severidade);
+    }
+
+    public function test_desvio_grande_gera_alerta_critico(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor();
+        $this->definirLimite($lavoura, 'ph', 5.5, 7.0);
+
+        // 1,0 fora numa faixa de 1,5 de largura: 67% de desvio.
+        $alerta = app(AlertaService::class)->verificar($this->registrarLeitura($sensor, 4.5));
+
+        $this->assertSame('critical', $alerta->tp_severidade);
+    }
+
     public function test_envia_email_quando_usuario_tem_notificacao_ativada(): void
     {
         Mail::fake();

@@ -1,6 +1,5 @@
 /**
  * Sistema genérico de modais para AgroTwin
- * Segue os princípios KISS (Keep It Simple, Stupid) e DRY (Don't Repeat Yourself)
  *
  */
 
@@ -56,14 +55,28 @@ class ModalManager {
                 // Para edição, redireciona normalmente (semelhante ao inserir)
                 window.location.href = url;
                 break;
+            // Ações que mudam estado vão por POST/DELETE (com CSRF): um GET
+            // seria disparado por prefetch do navegador ou por qualquer link.
             case 'inativar':
-                this.confirmAndExecute(url, 'Deseja realmente inativar esta propriedade?');
+                this.confirmAndExecute(url, 'Deseja realmente inativar esta propriedade?', 'POST');
                 break;
             case 'ativar':
-                this.confirmAndExecute(url, 'Deseja realmente ativar esta propriedade?');
+                this.confirmAndExecute(url, 'Deseja realmente ativar esta propriedade?', 'POST');
                 break;
             case 'excluir':
                 this.confirmAndExecute(url, 'Deseja realmente excluir este registro? Essa ação não pode ser desfeita.', 'DELETE');
+                break;
+            case 'marcar-como-lido':
+                this.confirmAndExecute(url, 'Deseja marcar este alerta como lido?', 'POST');
+                break;
+            case 'marcar-todos-lidos':
+                this.confirmAndExecute(url, 'Marcar todos os alertas como lidos?', 'POST');
+                break;
+            case 'irrigar':
+                this.confirmAndExecute(url, 'Ligar a irrigação desta lavoura agora?', 'POST');
+                break;
+            case 'parar-irrigacao':
+                this.confirmAndExecute(url, 'Desligar a irrigação desta lavoura?', 'POST');
                 break;
             case 'novo':
                 // Carrega o modal via AJAX para evitar recarregar a página

@@ -1,18 +1,20 @@
-@extends('layouts.app')
+@extends('layouts.index')
 
 @section('title', ($title ?? 'Nova Propriedade') . ' - AgroTwin')
 
-@section('content')
+@section('page-content')
     <x-ui.section-header
         :buttons="[
             [
                 'route' => route('propriedade.index'),
-                'text' => 'Voltar propriedade',
+                'text' => 'Voltar',
                 'icon' => 'fas fa-arrow-left'
             ],
         ]"
         title="{{ $title ?? 'Nova Propriedade' }}"
-        icon="{{ $icon ?? 'fas fa-plus-circle' }}"
+        modulo="propriedades"
+        etapa="{{ ($isEdit ?? false) ? 'Edição' : 'Cadastro' }}"
+        subtitle="Nome, área, tipo de solo e cidade — a cidade também é usada para mostrar o clima no dashboard."
     />
 
     <div class="grid grid-cols-12 gap-4">

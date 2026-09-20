@@ -7,15 +7,8 @@
 
 namespace App\Models\Sensor;
 
-use App\Entity\SensorEntity;
-
 trait Dto
 {
-    public static function getById($id)
-    {
-        return SensorEntity::getSensorById(self::query(), $id)->first();
-    }
-
     public function getDetalhesFormatados()
     {
         $detalhes = [];

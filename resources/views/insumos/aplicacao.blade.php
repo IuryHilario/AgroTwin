@@ -1,8 +1,3 @@
-@php
-    $insumo = $insumo ?? $aplicacao ?? null;
-    $aplicacao = $aplicacao ?? $insumo;
-@endphp
-
 <x-ui.modal-funcional
     modalId="aplicacaoInsumo"
     title="Aplicação de Insumo"
@@ -47,7 +42,7 @@
 
         <!-- Estatísticas de Aplicação -->
         @php
-            $aplicacoes = $aplicacao->getAplicacoes()->get();
+            $aplicacoes = $insumo->getAplicacoes()->get();
             $totalAplicacoes = $aplicacoes->count();
             $totalQuantidade = $aplicacoes->sum('nu_quantidade_aplicada');
             $totalArea = $aplicacoes->sum('nu_area_aplicada');
@@ -64,7 +59,7 @@
                 title="Quantidade Aplicada"
                 icon="fa-weight-hanging"
                 color="#4CAF50"
-                valor="{{ number_format($totalQuantidade, 2, ',', '.') }} {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}"
+                valor="{{ number_format($totalQuantidade, 2, ',', '.') }} {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}"
             />
             <x-extras.card
                 title="Área Coberta"
@@ -76,7 +71,7 @@
                 title="Dosagem Média"
                 icon="fa-tachometer-alt"
                 color="orange"
-                valor="{{ number_format($dosageMedia, 2, ',', '.') }} {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}/ha"
+                valor="{{ number_format($dosageMedia, 2, ',', '.') }} {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}/ha"
             />
         </div>
 
@@ -113,8 +108,8 @@
                                         <td class="px-4 py-3">{{ \Carbon\Carbon::parse($app->dt_aplicacao)->format('d/m/Y H:i') }}</td>
                                         <td class="px-4 py-3">{{ $app->lavoura->ds_cultura ?? 'N/A' }}</td>
                                         <td class="px-4 py-3">{{ number_format($app->nu_area_aplicada, 2, ',', '.') }}</td>
-                                        <td class="px-4 py-3">{{ number_format($app->nu_quantidade_aplicada, 2, ',', '.') }} {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}</td>
-                                        <td class="px-4 py-3">{{ number_format($app->nu_dosagem_hectare ?? 0, 2, ',', '.') }} {{ $aplicacao->tp_unidade_medida ? $aplicacao->tp_unidade_medida->value : 'UN' }}/ha</td>
+                                        <td class="px-4 py-3">{{ number_format($app->nu_quantidade_aplicada, 2, ',', '.') }} {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</td>
+                                        <td class="px-4 py-3">{{ number_format($app->nu_dosagem_hectare ?? 0, 2, ',', '.') }} {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}/ha</td>
                                         <td class="px-4 py-3">
                                             @if($app->tp_metodo_aplicacao)
                                                 @php

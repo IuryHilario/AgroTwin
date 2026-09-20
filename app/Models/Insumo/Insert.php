@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Models\Insumo;
+namespace App\Models\Insumo;
 
 use App\Services\BaseService;
 

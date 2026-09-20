@@ -16,10 +16,49 @@
         ],
     ]"
 >
-    <p class="text-muted mb-4 text-sm">
+    <p class="mb-4 text-sm text-muted">
         Defina os valores mínimo e máximo aceitáveis para cada parâmetro monitorado nesta lavoura.
-        Fora desse intervalo, um alerta será gerado automaticamente. Deixe em branco os parâmetros sem sensor instalado.
+        Fora desse intervalo o sistema gera alerta, e é com essa faixa que o relatório avalia as leituras.
+        Deixe em branco os parâmetros sem sensor instalado.
     </p>
+
+    {{-- Preenche os campos com valores de referência da cultura: sem isso a tela
+         são 16 campos em branco e a maioria acaba ficando sem configuração. --}}
+    <div
+        x-data="{
+            cultura: '{{ $culturaSugerida }}',
+            sugestoes: {{ Js::from($sugestoes) }},
+            aplicar() {
+                Object.entries(this.sugestoes[this.cultura] || {}).forEach(([tipo, faixa]) => {
+                    if (!faixa) return;
+                    const min = document.querySelector(`[name='limites[${tipo}][valor_min]']`);
+                    const max = document.querySelector(`[name='limites[${tipo}][valor_max]']`);
+                    if (min) min.value = faixa.min;
+                    if (max) max.value = faixa.max;
+                });
+            },
+        }"
+        class="mb-5 rounded-xl border border-subtle bg-subtle p-4"
+    >
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[200px] flex-1">
+                <label for="culturaSugerida" class="form-label">Usar valores de referência de</label>
+                <select id="culturaSugerida" x-model="cultura" class="form-control">
+                    @foreach ($culturas as $chave => $rotulo)
+                        <option value="{{ $chave }}">{{ $rotulo }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="button" class="btn btn-secondary" @click="aplicar()">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Preencher
+            </button>
+        </div>
+        <p class="mt-2 text-xs text-muted">
+            Valores de partida da literatura agronômica. Ajuste conforme a análise de solo e a
+            recomendação do seu agrônomo — nada é salvo até você clicar em Salvar.
+        </p>
+    </div>
 
     <x-form.form-modal
         action="{{ route('lavouras.limites.salvar', $lavoura->id_lavoura) }}"

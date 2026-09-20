@@ -14,7 +14,6 @@ class Insumo extends Model
     use Insumo\Core;
     use Insumo\Dto;
     use Insumo\Insert;
-    use Insumo\Update;
 
     public function __construct(array $attributes = [])
     {
@@ -56,6 +55,19 @@ class Insumo extends Model
     public function getEstoqueAbaixoMinimoAttribute()
     {
         return $this->estoque_atual < $this->nu_estoque_minimo;
+    }
+
+    /** Validade dentro dos próximos 30 dias — janela para usar ou repor. */
+    public function venceEmBreve(): bool
+    {
+        return $this->dt_validade !== null
+            && !$this->vencido()
+            && $this->dt_validade->lessThanOrEqualTo(now()->addDays(30));
+    }
+
+    public function vencido(): bool
+    {
+        return $this->dt_validade !== null && $this->dt_validade->isPast();
     }
 
     public function getMovimentacoesComSaldoAttribute()

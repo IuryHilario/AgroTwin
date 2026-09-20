@@ -12,32 +12,29 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Animações usadas nas telas de autenticação (sem equivalente pronto no Tailwind) */
-    --animate-gradient-shift: gradientShift 15s ease infinite;
-    --animate-float: float 6s ease-in-out infinite;
-    --animate-slide-up: slideUp 0.6s ease-out;
-    --animate-logo-pulse: logoPulse 2s infinite;
-}
+    /* Leituras de sensor (valores, faixas, horários) — dá cara de painel de instrumento
+       e alinha os dígitos em coluna, já que a fonte é monoespaçada */
+    --font-readout: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Menlo, monospace;
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(10deg); }
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes logoPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+/*
+ * Entrada escalonada das telas de autenticação. `backwards` mantém o elemento
+ * invisível durante o animation-delay — sem isso ele pisca antes de animar.
+ */
+.entrada {
+    animation: slideUp 0.5s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .entrada {
+        animation: none;
+    }
 }
 
 [x-cloak] {
@@ -51,7 +48,7 @@
  */
 @layer components {
     .btn {
-        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold uppercase tracking-wide shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-all duration-300;
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition-all duration-200;
     }
 
     .btn-primary {
@@ -86,29 +83,33 @@
         @apply overflow-hidden rounded-2xl border border-white/20 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] dark:border-gray-700/50 dark:bg-gray-800;
     }
 
-    /* Formulários (usados por x-form.input/select/form/form-modal em todo o app) */
+    /* Formulário de tela cheia: mesmo cartão das listagens */
     .form-section {
-        @apply mx-4 flex flex-col gap-5 rounded-2xl bg-white p-4 shadow-[0_2px_6px_rgba(0,0,0,0.1)] dark:bg-gray-800;
+        @apply mt-5 flex flex-col gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800;
     }
 
-    .form-section .form-actions {
-        @apply mt-4 flex flex-col justify-end gap-4 sm:flex-row;
+    .form-actions {
+        @apply flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row dark:border-gray-700;
     }
 
     .form-label {
-        @apply mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300;
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
     }
 
     .section-title {
-        @apply mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100;
+        @apply text-base font-semibold text-gray-900 dark:text-gray-100;
     }
 
     .form-control {
-        @apply w-full rounded-lg border-2 border-gray-200 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-green-500 focus:outline-none focus:ring-[3px] focus:ring-green-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100;
+        @apply w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 transition-colors duration-150 placeholder:text-gray-400 focus:border-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100;
+    }
+
+    .form-control[readonly] {
+        @apply bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400;
     }
 
     .form-control.is-invalid {
-        @apply border-red-500;
+        @apply border-rose-500 focus:ring-rose-500/10;
     }
 
     .invalid-feedback {
@@ -142,6 +143,49 @@
 
     .hover-surface {
         @apply hover:bg-gray-50 dark:hover:bg-gray-700/50;
+    }
+
+    /*
+     * Dashboard — painel de estado da lavoura.
+     * Superfície escura proposital nos dois temas: é a leitura "de instrumento"
+     * da estação, destacada do resto da interface.
+     */
+    .font-readout {
+        font-family: var(--font-readout);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .painel-estacao {
+        @apply relative overflow-hidden rounded-2xl text-white;
+        background:
+            radial-gradient(120% 140% at 12% 0%, #14532d 0%, transparent 55%),
+            radial-gradient(100% 120% at 100% 100%, #0b3b2e 0%, transparent 60%),
+            linear-gradient(140deg, #0f1f1a 0%, #111827 100%);
+    }
+
+    /* Malha de pontos: textura sutil de "papel milimetrado" sobre o painel */
+    .painel-estacao::before {
+        content: '';
+        @apply pointer-events-none absolute inset-0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+        background-size: 22px 22px;
+    }
+
+    .painel-estacao > * {
+        @apply relative;
+    }
+
+    /* Medidor: trilho da faixa configurada + marcador do valor atual */
+    .medidor-trilho {
+        @apply relative h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700;
+    }
+
+    .medidor-faixa {
+        @apply absolute inset-y-0 rounded-full;
+    }
+
+    .medidor-marcador {
+        @apply absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow dark:border-gray-800;
     }
 }
 

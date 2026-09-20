@@ -12,34 +12,48 @@ class RecomendacaoController extends Controller
 
     protected $resourceName = 'recomendacoes';
 
+    protected $singular = 'recomendacao';
+
     public function index(Request $request)
     {
-        $recomendacoes = Recomendacao::doUsuario(Auth::id());
+        $busca = trim((string) $request->input('busca'));
 
-        return view('recomendacoes.index', compact('recomendacoes'));
+        $consulta = Recomendacao::doUsuario(Auth::id())->with('lavoura');
+
+        if ($busca !== '') {
+            $consulta->where('ds_recomendacao', 'like', "%{$busca}%");
+        }
+
+        return view('recomendacoes.index', [
+            'recomendacoes' => $consulta->paginate(static::POR_PAGINA)->withQueryString(),
+            'busca' => $busca,
+            'stats' => $this->estatisticas(),
+        ]);
     }
 
     /**
-     * Sobrescreve o show() genérico do CrudOperations: a relação com o
-     * usuário passa por lavoura->propriedade (sem FK direta em
-     * "recomendacoes"), e tanto "lavouras" quanto "propriedades" têm coluna
-     * id_usuario — um whereHas("propriedade", ...) direto (via hasOneThrough)
-     * gera "ambiguous column name" ao juntar as duas tabelas. O whereHas
-     * aninhado evita isso.
+     * Sobrescreve o show() genérico: a relação com o usuário passa por
+     * lavoura->propriedade (sem FK direta em "recomendacoes"), então o escopo
+     * padrão por `id_usuario` ou por `propriedade` não serve aqui.
      */
     public function show($id)
     {
-        $recomendacao = Recomendacao::whereHas('lavoura.propriedade', function ($query) {
-            $query->where('id_usuario', Auth::id());
-        })->where('id_recomendacao', $id)->firstOrFail();
+        $recomendacao = Recomendacao::doUsuario(Auth::id())
+            ->where('id_recomendacao', $id)
+            ->firstOrFail();
 
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'html' => view('recomendacoes.detalhar', ['recomendacoe' => $recomendacao])->render(),
-            ]);
-        }
+        return $this->responderView('recomendacoes.detalhar', ['recomendacao' => $recomendacao], $recomendacao);
+    }
 
-        return view('recomendacoes.detalhar', ['recomendacoe' => $recomendacao]);
+    protected function estatisticas(): array
+    {
+        return [
+            ['valor' => Recomendacao::doUsuario(Auth::id())->count(), 'rotulo' => 'recomendações'],
+            [
+                'valor' => Recomendacao::doUsuario(Auth::id())->where('dt_recomendacao', '>=', now()->subDays(7))->count(),
+                'rotulo' => 'nos últimos 7 dias',
+                'destaque' => true,
+            ],
+        ];
     }
 }

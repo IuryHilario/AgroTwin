@@ -1,19 +1,21 @@
-@extends('layouts.app')
+@extends('layouts.index')
 
 @section('title', 'Insumos - AgroTwin')
 
-@section('content')
+@section('page-content')
 
     <x-ui.section-header
         :buttons="[
             [
                 'route' => route('insumos.index'),
-                'text' => 'Voltar Insumos',
+                'text' => 'Voltar',
                 'icon' => 'fas fa-arrow-left'
             ],
         ]"
         title="Novo Insumo"
-        icon="fas fa-plus-circle"
+        modulo="insumos"
+        etapa="Cadastro"
+        subtitle="Estoque e aplicações são registrados depois, pela listagem de insumos."
     />
 
     <div class="grid grid-cols-12 gap-4">

@@ -15,7 +15,7 @@ class LavouraIrrigacaoWebTest extends TestCase
     {
         [$usuario, $lavoura] = $this->cenarioComSensor();
 
-        $response = $this->actingAs($usuario)->get("/lavouras/{$lavoura->id_lavoura}/irrigacao/iniciar");
+        $response = $this->actingAs($usuario)->post("/lavouras/{$lavoura->id_lavoura}/irrigacao/iniciar");
 
         $response->assertRedirect();
         $this->assertTrue($lavoura->refresh()->fl_irrigacao_ativa);
@@ -30,7 +30,7 @@ class LavouraIrrigacaoWebTest extends TestCase
         [$usuario, $lavoura] = $this->cenarioComSensor();
         $lavoura->update(['fl_irrigacao_ativa' => true]);
 
-        $response = $this->actingAs($usuario)->get("/lavouras/{$lavoura->id_lavoura}/irrigacao/parar");
+        $response = $this->actingAs($usuario)->post("/lavouras/{$lavoura->id_lavoura}/irrigacao/parar");
 
         $response->assertRedirect();
         $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
@@ -41,7 +41,7 @@ class LavouraIrrigacaoWebTest extends TestCase
         [, $lavoura] = $this->cenarioComSensor();
         $outroUsuario = $this->criarUsuario();
 
-        $response = $this->actingAs($outroUsuario)->get("/lavouras/{$lavoura->id_lavoura}/irrigacao/iniciar");
+        $response = $this->actingAs($outroUsuario)->post("/lavouras/{$lavoura->id_lavoura}/irrigacao/iniciar");
 
         $response->assertStatus(404);
         $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);

@@ -8,8 +8,8 @@
     resourceName="lavoura"
     :additionalButtons="$lavoura ? [
         $lavoura->fl_irrigacao_ativa
-            ? ['tag' => 'a', 'text' => 'Parar Irrigação', 'class' => 'btn-danger', 'icon' => 'fas fa-stop', 'href' => route('lavouras.irrigacao.parar', $lavoura->id_lavoura)]
-            : ['tag' => 'a', 'text' => 'Irrigar Agora', 'class' => 'btn-info', 'icon' => 'fas fa-tint', 'href' => route('lavouras.irrigacao.iniciar', $lavoura->id_lavoura)],
+            ? ['text' => 'Parar Irrigação', 'class' => 'btn-danger', 'icon' => 'fas fa-stop', 'data-action' => 'parar-irrigacao', 'data-url' => route('lavouras.irrigacao.parar', $lavoura->id_lavoura)]
+            : ['text' => 'Irrigar Agora', 'class' => 'btn-info', 'icon' => 'fas fa-tint', 'data-action' => 'irrigar', 'data-url' => route('lavouras.irrigacao.iniciar', $lavoura->id_lavoura)],
     ] : []"
 >
     @if($lavoura)

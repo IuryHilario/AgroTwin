@@ -1,19 +1,21 @@
-@extends('layouts.app')
+@extends('layouts.index')
 
 @section('title', 'Novo Sensor - AgroTwin')
 
-@section('content')
+@section('page-content')
 
     <x-ui.section-header
         :buttons="[
             [
                 'route' => route('sensores.index'),
-                'text' => 'Voltar Sensores',
+                'text' => 'Voltar',
                 'icon' => 'fas fa-arrow-left'
             ],
         ]"
         title="Novo Sensor"
-        icon="fas fa-plus-circle"
+        modulo="sensores"
+        etapa="Cadastro"
+        subtitle="O token de acesso do ESP32 é gerado automaticamente ao salvar."
     />
 
     <div class="grid grid-cols-12 gap-4">

@@ -21,9 +21,10 @@ class Recomendacao extends Model
         return $this->belongsTo(Lavoura::class, 'id_lavoura', 'id_lavoura');
     }
 
-    public static function doUsuario($idUsuario)
+    /** Consulta (não executada) das recomendações das lavouras do usuário. */
+    public static function doUsuario($idUsuario): \Illuminate\Database\Eloquent\Builder
     {
-        return RecomendacaoEntity::getPorUsuario((new self)->newQuery(), $idUsuario)->get();
+        return RecomendacaoEntity::getPorUsuario((new self)->newQuery(), $idUsuario);
     }
 
     public function setFuncionalidades()

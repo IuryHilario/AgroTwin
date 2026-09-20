@@ -4,11 +4,6 @@ namespace App\Models\Insumo;
 
 trait Dto
 {
-    public static function getById($id)
-    {
-        return self::with('usuario')->where('id_insumo', $id)->first();
-    }
-
     public function getDetalhesFormatados()
     {
         $detalhes =  [

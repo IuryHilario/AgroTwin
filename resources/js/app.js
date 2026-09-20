@@ -21,3 +21,30 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 });
+
+// Usado pelo botão "Enviar por Email" do relatório de insumo (modal carregado
+// via AJAX — scripts embutidos no HTML do modal não rodam, então essa função
+// precisa estar no bundle global carregado no layout).
+window.enviarRelatorioInsumoEmail = async function (idInsumo, button) {
+    const original = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Enviando...';
+
+    try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        const response = await fetch(`/insumos/relatorio/${idInsumo}/email`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+            },
+        });
+        const data = await response.json();
+        alert(data.message || 'Não foi possível enviar o relatório.');
+    } catch (error) {
+        alert('Erro ao enviar o relatório por email.');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = original;
+    }
+};

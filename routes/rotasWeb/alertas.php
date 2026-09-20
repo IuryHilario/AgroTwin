@@ -5,5 +5,6 @@ use App\Http\Controllers\AlertaController;
 
 Route::prefix('alertas')->group(function () {
     Route::get('/', [AlertaController::class, 'index'])->name('alertas.index');
-    Route::get('/{id}/marcar-lido', [AlertaController::class, 'marcarLido'])->name('alertas.marcarLido');
+    Route::post('/{id}/marcar-lido', [AlertaController::class, 'marcarLido'])->name('alertas.marcarLido');
+    Route::post('/marcar-todos-lidos', [AlertaController::class, 'marcarTodosLidos'])->name('alertas.marcarTodosLidos');
 });

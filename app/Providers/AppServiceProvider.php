@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Datas relativas em português ("há 5 dias") sem trocar o locale da
+        // aplicação, que hoje só tem mensagens de validação em inglês.
+        Carbon::setLocale('pt_BR');
+        CarbonImmutable::setLocale('pt_BR');
+
         $this->loadMigrationsFrom([
             database_path('migrations/core'),
             database_path('migrations/custom'),

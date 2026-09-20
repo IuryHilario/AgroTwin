@@ -7,28 +7,32 @@
     resourceName="insumo"
     :additionalButtons="[
         [
-            'tag' => 'button',
+            'tag' => 'a',
             'text' => 'Exportar PDF',
             'class' => 'btn-primary',
             'icon' => 'fas fa-file-pdf',
-            'onclick' => 'alert(\'Funcionalidade de exportar PDF será implementada\')'
+            'href' => route('insumos.relatorio.pdf', $insumo->id_insumo ?? 0),
         ],
         [
             'tag' => 'button',
             'text' => 'Enviar por Email',
             'class' => 'btn-primary',
             'icon' => 'fas fa-envelope',
-            'onclick' => 'alert(\'Funcionalidade de enviar email será implementada\')'
+            'onclick' => 'enviarRelatorioInsumoEmail(' . ($insumo->id_insumo ?? 0) . ', this)',
         ]
     ]"
 >
 
     @if($insumo)
+        @php
+            $unidade = $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN';
+        @endphp
+
         <div class="mb-4 grid grid-cols-12 gap-4">
             <div class="card col-span-12 bg-green-600 text-white">
                 <div class="p-4 text-center">
                     <h4 class="mb-1 text-xl font-semibold">{{ $insumo->ds_nome }}</h4>
-                    <p class="mb-0">Relatório Completo de Utilização e Performance</p>
+                    <p class="mb-0">Relatório de Consumo e Custo — Últimos {{ $relatorio['periodoDias'] }} Dias</p>
                     <small>Gerado em: {{ now()->format('d/m/Y H:i:s') }}</small>
                 </div>
             </div>
@@ -39,7 +43,7 @@
             <div class="col-span-12">
                 <h6 class="mb-3 flex items-center font-semibold">
                     <i class="fas fa-chart-pie mr-2"></i>
-                    Resumo Executivo - Últimos 30 Dias
+                    Resumo Executivo — Últimos {{ $relatorio['periodoDias'] }} Dias
                 </h6>
             </div>
             <div class="col-span-12 md:col-span-3">
@@ -47,8 +51,7 @@
                     <div class="p-4 text-center">
                         <i class="fas fa-shopping-cart mb-2 text-2xl text-blue-600"></i>
                         <h6>Consumo Total</h6>
-                        <h4 class="text-xl font-bold text-blue-600">342
-                            {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</h4>
+                        <h4 class="text-xl font-bold text-blue-600">{{ number_format($relatorio['consumoTotal'], 2, ',', '.') }} {{ $unidade }}</h4>
                     </div>
                 </div>
             </div>
@@ -56,8 +59,8 @@
                 <div class="card border-2 border-green-500">
                     <div class="p-4 text-center">
                         <i class="fas fa-dollar-sign mb-2 text-2xl text-green-600"></i>
-                        <h6>Custo Total</h6>
-                        <h4 class="text-xl font-bold text-green-600">R$ 1.254,80</h4>
+                        <h6>Custo Estimado</h6>
+                        <h4 class="text-xl font-bold text-green-600">R$ {{ number_format($relatorio['custoTotal'], 2, ',', '.') }}</h4>
                     </div>
                 </div>
             </div>
@@ -66,39 +69,47 @@
                     <div class="p-4 text-center">
                         <i class="fas fa-seedling mb-2 text-2xl text-sky-600"></i>
                         <h6>Área Tratada</h6>
-                        <h4 class="text-xl font-bold text-sky-600">23,5 ha</h4>
+                        <h4 class="text-xl font-bold text-sky-600">{{ number_format($relatorio['areaTratada'], 2, ',', '.') }} ha</h4>
                     </div>
                 </div>
             </div>
             <div class="col-span-12 md:col-span-3">
                 <div class="card border-2 border-amber-500">
                     <div class="p-4 text-center">
-                        <i class="fas fa-percentage mb-2 text-2xl text-amber-500"></i>
-                        <h6>Eficiência</h6>
-                        <h4 class="text-xl font-bold text-amber-500">87,3%</h4>
+                        <i class="fas fa-spray-can mb-2 text-2xl text-amber-500"></i>
+                        <h6>Aplicações</h6>
+                        <h4 class="text-xl font-bold text-amber-500">{{ $relatorio['totalAplicacoes'] }}</h4>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Gráficos de Performance -->
+        <!-- Consumo semanal e distribuição por lavoura -->
         <div class="mb-4 grid grid-cols-12 gap-4">
             <div class="col-span-12 md:col-span-6">
                 <div class="card">
                     <div class="border-b border-subtle px-4 py-3">
                         <h6 class="flex items-center font-semibold">
                             <i class="fas fa-chart-line mr-2"></i>
-                            Consumo Mensal
+                            Consumo por Semana
                         </h6>
                     </div>
                     <div class="p-4">
-                        <canvas id="consumoChart" class="flex h-[200px] items-center justify-center rounded-md bg-gray-100 dark:bg-gray-900">
-                            <div class="text-center text-muted">
-                                <i class="fas fa-chart-bar mb-2 block text-3xl"></i>
-                                Gráfico de Consumo Mensal<br>
-                                <small>(Implementar com Chart.js)</small>
+                        @forelse ($relatorio['serieSemanal'] as $semana)
+                            @php
+                                $maiorQuantidade = $relatorio['serieSemanal']->max('quantidade') ?: 1;
+                                $largura = $semana['quantidade'] > 0 ? max(4, round($semana['quantidade'] / $maiorQuantidade * 100)) : 0;
+                            @endphp
+                            <div class="mb-2 flex items-center justify-between text-sm">
+                                <span>{{ $semana['label'] }}</span>
+                                <span>{{ number_format($semana['quantidade'], 2, ',', '.') }} {{ $unidade }}</span>
                             </div>
-                        </canvas>
+                            <div class="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                <div class="h-full bg-blue-600" style="width: {{ $largura }}%"></div>
+                            </div>
+                        @empty
+                            <p class="py-6 text-center text-muted">Nenhuma aplicação registrada no período.</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -111,41 +122,20 @@
                         </h6>
                     </div>
                     <div class="p-4">
-                        <div class="mb-2 flex items-center justify-between">
-                            <span>Lavoura Norte</span>
-                            <span>35% (120
-                                {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }})</span>
-                        </div>
-                        <div class="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div class="h-full bg-blue-600" style="width: 35%"></div>
-                        </div>
-
-                        <div class="mb-2 flex items-center justify-between">
-                            <span>Lavoura Sul</span>
-                            <span>28% (96
-                                {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }})</span>
-                        </div>
-                        <div class="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div class="h-full bg-green-600" style="width: 28%"></div>
-                        </div>
-
-                        <div class="mb-2 flex items-center justify-between">
-                            <span>Lavoura Leste</span>
-                            <span>22% (75
-                                {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }})</span>
-                        </div>
-                        <div class="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div class="h-full bg-sky-500" style="width: 22%"></div>
-                        </div>
-
-                        <div class="mb-2 flex items-center justify-between">
-                            <span>Lavoura Oeste</span>
-                            <span>15% (51
-                                {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }})</span>
-                        </div>
-                        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                            <div class="h-full bg-amber-500" style="width: 15%"></div>
-                        </div>
+                        @php
+                            $cores = ['bg-blue-600', 'bg-green-600', 'bg-sky-500', 'bg-amber-500', 'bg-purple-500'];
+                        @endphp
+                        @forelse ($relatorio['distribuicaoPorLavoura'] as $index => $lavoura)
+                            <div class="mb-2 flex items-center justify-between">
+                                <span>{{ $lavoura['nome'] }}</span>
+                                <span>{{ $lavoura['percentual'] }}% ({{ number_format($lavoura['quantidade'], 2, ',', '.') }} {{ $unidade }})</span>
+                            </div>
+                            <div class="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                <div class="h-full {{ $cores[$index % count($cores)] }}" style="width: {{ $lavoura['percentual'] }}%"></div>
+                            </div>
+                        @empty
+                            <p class="py-6 text-center text-muted">Nenhuma aplicação registrada no período.</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -156,7 +146,7 @@
             <div class="col-span-12">
                 <h6 class="mb-3 flex items-center font-semibold">
                     <i class="fas fa-microscope mr-2"></i>
-                    Análise Detalhada
+                    Análise Detalhada por Semana
                 </h6>
                 <div class="overflow-x-auto rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.08)]">
                     <table class="w-full border-collapse text-left text-sm">
@@ -165,95 +155,43 @@
                                 <th class="px-4 py-3">Período</th>
                                 <th class="px-4 py-3">Aplicações</th>
                                 <th class="px-4 py-3">Quantidade</th>
-                                <th class="px-4 py-3">Custo</th>
                                 <th class="px-4 py-3">Área</th>
-                                <th class="px-4 py-3">Eficiência</th>
-                                <th class="px-4 py-3">Resultado</th>
+                                <th class="px-4 py-3">Custo Estimado</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="border-t border-subtle hover-surface">
-                                <td class="px-4 py-3">Semana 1</td>
-                                <td class="px-4 py-3">3</td>
-                                <td class="px-4 py-3">85 {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</td>
-                                <td class="px-4 py-3">R$ 312,30</td>
-                                <td class="px-4 py-3">5,8 ha</td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">92%</span></td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">Excelente</span></td>
-                            </tr>
-                            <tr class="border-t border-subtle hover-surface">
-                                <td class="px-4 py-3">Semana 2</td>
-                                <td class="px-4 py-3">4</td>
-                                <td class="px-4 py-3">96 {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</td>
-                                <td class="px-4 py-3">R$ 352,80</td>
-                                <td class="px-4 py-3">6,2 ha</td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">89%</span></td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">Bom</span></td>
-                            </tr>
-                            <tr class="border-t border-subtle hover-surface">
-                                <td class="px-4 py-3">Semana 3</td>
-                                <td class="px-4 py-3">2</td>
-                                <td class="px-4 py-3">78 {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</td>
-                                <td class="px-4 py-3">R$ 286,70</td>
-                                <td class="px-4 py-3">5,1 ha</td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-amber-500 px-2 py-1 text-xs font-semibold text-white">76%</span></td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-amber-500 px-2 py-1 text-xs font-semibold text-white">Regular</span></td>
-                            </tr>
-                            <tr class="border-t border-subtle hover-surface">
-                                <td class="px-4 py-3">Semana 4</td>
-                                <td class="px-4 py-3">3</td>
-                                <td class="px-4 py-3">83 {{ $insumo->tp_unidade_medida ? $insumo->tp_unidade_medida->value : 'UN' }}</td>
-                                <td class="px-4 py-3">R$ 303,00</td>
-                                <td class="px-4 py-3">6,4 ha</td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">94%</span></td>
-                                <td class="px-4 py-3"><span class="rounded-full bg-green-600 px-2 py-1 text-xs font-semibold text-white">Excelente</span></td>
-                            </tr>
+                            @foreach ($relatorio['serieSemanal'] as $semana)
+                                <tr class="border-t border-subtle hover-surface">
+                                    <td class="px-4 py-3">{{ $semana['label'] }}</td>
+                                    <td class="px-4 py-3">{{ $semana['aplicacoes'] }}</td>
+                                    <td class="px-4 py-3">{{ number_format($semana['quantidade'], 2, ',', '.') }} {{ $unidade }}</td>
+                                    <td class="px-4 py-3">{{ number_format($semana['area'], 2, ',', '.') }} ha</td>
+                                    <td class="px-4 py-3">R$ {{ number_format($semana['custo'], 2, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Recomendações -->
-        <div class="grid grid-cols-12 gap-4">
-            <div class="col-span-12 md:col-span-6">
-                <div class="card border-2 border-green-500">
-                    <div class="rounded-t-2xl bg-green-600 px-4 py-3 text-white">
-                        <h6 class="flex items-center font-semibold">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            Pontos Positivos
-                        </h6>
-                    </div>
-                    <div class="p-4">
-                        <ul class="m-0 list-none space-y-2 text-sm">
-                            <li><i class="fas fa-check mr-2 text-green-600"></i>Eficiência geral acima da média</li>
-                            <li><i class="fas fa-check mr-2 text-green-600"></i>Redução de 15% no consumo vs. mês anterior
-                            </li>
-                            <li><i class="fas fa-check mr-2 text-green-600"></i>Excelente performance na Lavoura Norte</li>
-                            <li><i class="fas fa-check mr-2 text-green-600"></i>Estoque adequado para próximo mês</li>
-                        </ul>
+        @if($insumo->estoque_abaixo_minimo)
+            <div class="grid grid-cols-12 gap-4">
+                <div class="col-span-12">
+                    <div class="card border-2 border-red-500">
+                        <div class="rounded-t-2xl bg-red-600 px-4 py-3 text-white">
+                            <h6 class="flex items-center font-semibold">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Estoque Baixo
+                            </h6>
+                        </div>
+                        <div class="p-4 text-sm">
+                            Estoque atual ({{ number_format($insumo->estoque_atual, 2, ',', '.') }} {{ $unidade }}) está abaixo do mínimo configurado ({{ number_format($insumo->nu_estoque_minimo, 2, ',', '.') }} {{ $unidade }}). Considere repor antes da próxima aplicação.
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-span-12 md:col-span-6">
-                <div class="card border-2 border-amber-500">
-                    <div class="rounded-t-2xl bg-amber-400 px-4 py-3 text-gray-900">
-                        <h6 class="flex items-center font-semibold">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Recomendações
-                        </h6>
-                    </div>
-                    <div class="p-4">
-                        <ul class="m-0 list-none space-y-2 text-sm">
-                            <li><i class="fas fa-arrow-right mr-2 text-amber-500"></i>Revisar dosagem na Lavoura Leste</li>
-                            <li><i class="fas fa-arrow-right mr-2 text-amber-500"></i>Considerar aplicação preventiva</li>
-                            <li><i class="fas fa-arrow-right mr-2 text-amber-500"></i>Monitorar clima antes da aplicação</li>
-                            <li><i class="fas fa-arrow-right mr-2 text-amber-500"></i>Revisar fornecedor atual</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endif
 
     @else
         <div class="py-8 text-center text-muted">
