@@ -39,8 +39,9 @@
             };
         </script>
 
-        <!-- Fonts -->
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Fonts — Inter para a interface, IBM Plex Mono para leituras de sensor -->
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
         <!-- Icons -->
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -130,6 +131,37 @@
             x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300"
             x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         </div>
+
+        {{--
+            Mensagens de retorno (session flash) das ações por link — ligar/parar
+            irrigação, marcar alerta, acesso negado. Formulários AJAX não caem
+            aqui: o fetch segue o redirect e consome a mensagem, e o modal.js
+            mostra o próprio resultado.
+        --}}
+        @php
+            $mensagens = collect([
+                'success' => ['tom' => 'ok', 'icone' => 'fa-circle-check'],
+                'info' => ['tom' => 'info', 'icone' => 'fa-circle-info'],
+                'error' => ['tom' => 'erro', 'icone' => 'fa-circle-exclamation'],
+            ])->filter(fn ($_, $tipo) => session()->has($tipo));
+        @endphp
+        @if ($mensagens->isNotEmpty())
+            <div class="pointer-events-none fixed inset-x-4 top-20 z-[1200] flex flex-col items-end gap-2 sm:left-auto sm:right-6">
+                @foreach ($mensagens as $tipo => $estilo)
+                    <div x-data="{ aberto: true }" x-init="setTimeout(() => aberto = false, 5000)" x-show="aberto"
+                         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-[-8px] opacity-0"
+                         x-transition:leave="transition ease-in duration-150" x-transition:leave-end="opacity-0"
+                         role="status"
+                         class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-subtle bg-white p-4 shadow-lg dark:bg-gray-800">
+                        <i class="fas {{ $estilo['icone'] }} mt-0.5 {{ ['ok' => 'text-emerald-500', 'info' => 'text-sky-500', 'erro' => 'text-rose-500'][$estilo['tom']] }}"></i>
+                        <p class="flex-1 text-sm text-heading">{{ session($tipo) }}</p>
+                        <button type="button" @click="aberto = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Fechar">
+                            <i class="fas fa-xmark"></i>
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         <!-- Form de logout (hidden) -->
         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">

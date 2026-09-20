@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use App\Enums\TipoSensor;
 use App\Enums\TipoStatusSensor;
-use Illuminate\Database\Eloquent\Builder;
 
 class SensorEntity
 {
@@ -24,21 +23,4 @@ class SensorEntity
         'ds_status' => TipoStatusSensor::class,
     ];
 
-    public static function getSensorById(Builder $query, $id)
-    {
-        return $query->select('*')
-            ->where('id_sensor', $id);
-    }
-
-    public static function getSensoresByPropriedade(Builder $query, $idPropriedade)
-    {
-        return $query->select('*')
-            ->where('id_propriedade', $idPropriedade);
-    }
-
-    public static function getSensoresByLavoura(Builder $query, $idLavoura)
-    {
-        return $query->select('*')
-            ->where('id_lavoura', $idLavoura);
-    }
 }

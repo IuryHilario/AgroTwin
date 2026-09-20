@@ -48,6 +48,14 @@ trait Core
         ];
         $funcionalidades[] = $funcRelatorio;
 
+        $funcExcluir = [
+            'id' => 'excluir',
+            'nome' => 'Excluir',
+            'icone' => 'fa-trash',
+            'link' => route('insumos.destroy', $this->id_insumo),
+        ];
+        $funcionalidades[] = $funcExcluir;
+
         return $funcionalidades;
     }
 }

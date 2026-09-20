@@ -131,65 +131,82 @@ function lerSerieDoCanvas(ctx) {
     };
 }
 
+/**
+ * Opções compartilhadas pelos gráficos do dashboard: eixo limpo, fonte
+ * monoespaçada nos números (mesma dos medidores) e tooltip com a unidade.
+ */
+function opcoesGrafico(unidade) {
+    const cinza = 'rgba(148, 163, 184, 0.7)';
+
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                displayColors: false,
+                padding: 10,
+                backgroundColor: 'rgba(17, 24, 39, 0.92)',
+                titleFont: { family: "'IBM Plex Mono', monospace", size: 11 },
+                bodyFont: { family: "'IBM Plex Mono', monospace", size: 13, weight: '600' },
+                callbacks: {
+                    label: (item) => item.parsed.y + unidade,
+                },
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                border: { display: false },
+                grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                ticks: {
+                    color: cinza,
+                    font: { family: "'IBM Plex Mono', monospace", size: 11 },
+                    callback: (value) => value + unidade,
+                },
+            },
+            x: {
+                border: { display: false },
+                grid: { display: false },
+                ticks: {
+                    color: cinza,
+                    font: { family: "'IBM Plex Mono', monospace", size: 11 },
+                },
+            },
+        },
+        elements: {
+            point: { hoverRadius: 7 },
+        },
+    };
+}
+
+function dadosLinha(serie, cor, corArea) {
+    return {
+        labels: serie.labels,
+        datasets: [{
+            data: serie.valores,
+            borderColor: cor,
+            backgroundColor: corArea,
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: cor,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+        }],
+    };
+}
+
 // Create moisture chart
 function createMoistureChart() {
     const ctx = document.getElementById('moistureChart');
     if (!ctx) return;
 
-    const serie = lerSerieDoCanvas(ctx);
-
-    const moistureData = {
-        labels: serie.labels,
-        datasets: [{
-            label: 'Umidade (%)',
-            data: serie.valores,
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#3b82f6',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 6
-        }]
-    };
-
     new Chart(ctx, {
         type: 'line',
-        data: moistureData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: '#f3f4f6'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            },
-            elements: {
-                point: {
-                    hoverRadius: 8
-                }
-            }
-        }
+        data: dadosLinha(lerSerieDoCanvas(ctx), '#0ea5e9', 'rgba(14, 165, 233, 0.12)'),
+        options: opcoesGrafico('%'),
     });
 }
 
@@ -198,58 +215,10 @@ function createPhChart() {
     const ctx = document.getElementById('phChart');
     if (!ctx) return;
 
-    const serie = lerSerieDoCanvas(ctx);
-
-    const phData = {
-        labels: serie.labels,
-        datasets: [{
-            label: 'pH',
-            data: serie.valores,
-            borderColor: '#8b5cf6',
-            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#8b5cf6',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 6
-        }]
-    };
-
     new Chart(ctx, {
         type: 'line',
-        data: phData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: '#f3f4f6'
-                    },
-                    ticks: {
-                        stepSize: 0.2
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            },
-            elements: {
-                point: {
-                    hoverRadius: 8
-                }
-            }
-        }
+        data: dadosLinha(lerSerieDoCanvas(ctx), '#16a34a', 'rgba(22, 163, 74, 0.12)'),
+        options: opcoesGrafico(''),
     });
 }
 

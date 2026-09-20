@@ -1,19 +1,20 @@
-@extends('layouts.app')
+@extends('layouts.index')
 
 @section('title', 'Editar Lavoura - AgroTwin')
 
-@section('content')
+@section('page-content')
 
     <x-ui.section-header
         :buttons="[
             [
                 'route' => route('lavouras.index'),
-                'text' => 'Voltar Lavouras',
+                'text' => 'Voltar',
                 'icon' => 'fas fa-arrow-left'
             ],
         ]"
         title="Editar Lavoura"
-        icon="fas fa-plus-circle"
+        modulo="lavouras"
+        etapa="Edição"
     />
 
     <div class="grid grid-cols-12 gap-4">

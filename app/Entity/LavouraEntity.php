@@ -30,22 +30,10 @@ class LavouraEntity
         'fl_irrigacao_ativa' => 'boolean',
     ];
 
-    public static function getLavouraById(Builder $query, $id)
-    {
-        return $query->select('*')
-            ->where('id_lavoura', $id);
-    }
-
     public static function getLavourasByPropriedade(Builder $query, $idPropriedade)
     {
         return $query->select('*')
             ->where('id_propriedade', $idPropriedade);
     }
 
-    public static function getPropriedadesByIdLavoura(Builder $query, $idLavoura)
-    {
-        return $query->select('*')
-            ->join('propriedades', 'propriedades.id_propriedade', '=', 'lavouras.id_propriedade')
-            ->where('lavouras.id_lavoura', $idLavoura);
-    }
 }

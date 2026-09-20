@@ -24,8 +24,11 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'password' => 'required|string',
+            'email' => 'required|string|email|max:255|unique:usuarios,email',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'email.unique' => 'Já existe uma conta com este e-mail.',
+            'password.confirmed' => 'A confirmação de senha não confere.',
         ]);
 
         User::create([

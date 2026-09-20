@@ -15,6 +15,7 @@ Route::prefix('lavouras')->group(function () {
     Route::delete('/{id}', [LavouraController::class, 'destroy'])->name('lavouras.destroy');
     Route::get('/{id}/limites', [LavouraController::class, 'telaConfigurarLimites'])->name('lavouras.limites');
     Route::post('/{id}/limites', [LavouraController::class, 'salvarLimites'])->name('lavouras.limites.salvar');
-    Route::get('/{id}/irrigacao/iniciar', [LavouraController::class, 'iniciarIrrigacaoManual'])->name('lavouras.irrigacao.iniciar');
-    Route::get('/{id}/irrigacao/parar', [LavouraController::class, 'pararIrrigacao'])->name('lavouras.irrigacao.parar');
+    // POST: ligar e desligar a bomba muda o estado da lavoura, não pode ser um GET
+    Route::post('/{id}/irrigacao/iniciar', [LavouraController::class, 'iniciarIrrigacaoManual'])->name('lavouras.irrigacao.iniciar');
+    Route::post('/{id}/irrigacao/parar', [LavouraController::class, 'pararIrrigacao'])->name('lavouras.irrigacao.parar');
 });

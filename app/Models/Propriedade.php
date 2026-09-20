@@ -45,11 +45,6 @@ class Propriedade extends Model
         return $query->where('fl_inativo', false);
     }
 
-    public static function getById($id)
-    {
-        return PropriedadeEntity::getPropriedadeById(self::query(), $id)->first();
-    }
-
     public function getDetalhesFormatados()
     {
         $detalhes = [];

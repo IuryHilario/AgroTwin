@@ -10,47 +10,35 @@ trait Tela
 {
     public function telaInserir()
     {
-        $propriedades = PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario);
-
-        return view('lavouras.inserir', compact('propriedades'));
+        return view('lavouras.inserir', [
+            'propriedades' => PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario),
+        ]);
     }
 
     public function telaAlterar($id)
     {
-        $lavoura = $this->LavouraModel::findOrFail($id);
-        $propriedades = PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario);
-
-        return view('lavouras.edit', compact('lavoura', 'propriedades'));
+        return view('lavouras.edit', [
+            'lavoura' => $this->buscarDoUsuario($this->model, $id),
+            'propriedades' => PropriedadeEntity::pluckNomeByUsuario(Propriedade::query(), $this->idUsuario),
+        ]);
     }
 
     public function telaMonitorar($id, SensorReadingService $leituraService)
     {
-        $lavoura = $this->LavouraModel::with(['propriedade', 'sensores'])
-            ->whereHas('propriedade', function ($query) {
-                $query->where('id_usuario', $this->idUsuario);
-            })
+        $lavoura = $this->consultaDoUsuario($this->model)
+            ->with(['propriedade', 'sensores'])
             ->where('id_lavoura', $id)
             ->firstOrFail();
 
-        $ultimasLeituras = $lavoura->sensores->mapWithKeys(fn ($sensor) => [
-            $sensor->id_sensor => $leituraService->ultimaLeitura($sensor),
-        ]);
+        $dados = [
+            'lavoura' => $lavoura,
+            'ultimasLeituras' => $lavoura->sensores->mapWithKeys(fn ($sensor) => [
+                $sensor->id_sensor => $leituraService->ultimaLeitura($sensor),
+            ]),
+            'recomendacoes' => $lavoura->recomendacoes()->orderByDesc('dt_recomendacao')->limit(10)->get(),
+            'historicoIrrigacao' => $lavoura->historicoIrrigacao()->orderByDesc('dt_inicio')->limit(10)->get(),
+        ];
 
-        $recomendacoes = $lavoura->recomendacoes()->orderByDesc('dt_recomendacao')->limit(10)->get();
-        $historicoIrrigacao = $lavoura->historicoIrrigacao()->orderByDesc('dt_inicio')->limit(10)->get();
-
-        $dados = compact('lavoura', 'ultimasLeituras', 'recomendacoes', 'historicoIrrigacao');
-
-        if (request()->ajax()) {
-            $html = view('lavouras.monitor', $dados)->render();
-
-            return response()->json([
-                'success' => true,
-                'data' => $lavoura,
-                'html' => $html,
-            ]);
-        }
-
-        return view('lavouras.monitor', $dados);
+        return $this->responderView('lavouras.monitor', $dados, $lavoura);
     }
 }

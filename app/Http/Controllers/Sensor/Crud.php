@@ -17,10 +17,22 @@ trait Crud
 
     public function update(UpdateSensorRequest $request, $id)
     {
-        $sensor = $this->SensorModel::findOrFail($id);
+        $sensor = $this->buscarDoUsuario($this->model, $id);
         $sensor->alterar($this->idUsuario, $request->validated());
 
         return redirect()->route('sensores.index')
                         ->with('success', 'Sensor atualizado com sucesso!');
+    }
+
+    public function destroy($id)
+    {
+        $sensor = $this->buscarDoUsuario($this->model, $id);
+        $sensor->delete();
+
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Sensor excluído com sucesso!']);
+        }
+
+        return redirect()->route('sensores.index')->with('success', 'Sensor excluído com sucesso!');
     }
 }

@@ -10,4 +10,5 @@ Route::prefix('/sensores')->group(function () {
     Route::get('/{id}/show', [SensorController::class, 'show'])->name('sensores.show');
     Route::get('/{id}/edit', [SensorController::class, 'telaAlterar'])->name('sensores.edit');
     Route::put('/{id}/update', [SensorController::class, 'update'])->name('sensores.update');
+    Route::delete('/{id}', [SensorController::class, 'destroy'])->name('sensores.destroy');
 });

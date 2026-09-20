@@ -78,6 +78,7 @@ class SensorReadingService
 
             return [
                 'sensor' => $sensor,
+                'leituras' => $leituras,
                 'resumo' => $this->resumoEstatistico($leituras),
                 'serie' => $this->serieDiaria($leituras),
             ];
