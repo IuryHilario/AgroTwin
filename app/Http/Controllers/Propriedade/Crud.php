@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Propriedade;
 
 use App\Http\Requests\Propriedade\StorePropriedadeRequest;
 use App\Services\ClimaService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 trait Crud
@@ -17,10 +16,10 @@ trait Crud
             ->with('success', 'Propriedade criada com sucesso!');
     }
 
-    public function update(Request $request, $id)
+    public function update(StorePropriedadeRequest $request, $id)
     {
         $propriedade = $this->buscarDoUsuario($this->model, $id);
-        $propriedade->alterar(Auth::id(), $request->all());
+        $propriedade->alterar(Auth::id(), $request->validated());
 
         return redirect()->route('propriedade.index')
             ->with('success', 'Propriedade atualizada com sucesso!');
@@ -30,7 +29,7 @@ trait Crud
     public function show($id)
     {
         $propriedade = $this->buscarDoUsuario($this->model, $id);
-        $clima = app(ClimaService::class)->atual($propriedade->ds_localizacao);
+        $clima = app(ClimaService::class)->daPropriedade($propriedade);
 
         return $this->responderView('propriedade.detalhar', compact('propriedade', 'clima'), $propriedade);
     }

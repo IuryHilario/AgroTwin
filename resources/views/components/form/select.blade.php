@@ -16,7 +16,7 @@
         </label>
     @endif
 
-    <select name="{{ $name }}" id="{{ $name }}" {{ $attributes->class(['form-control', 'is-invalid' => $error]) }}>
+    <select name="{{ $name }}" id="{{ $name }}" @required($required) {{ $attributes->class(['form-control', 'is-invalid' => $error]) }}>
         @foreach ($options as $valorOpcao => $rotuloOpcao)
             <option value="{{ $valorOpcao }}" @selected((string) old($name, $value) === (string) $valorOpcao)>
                 {{ $rotuloOpcao }}

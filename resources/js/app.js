@@ -1,6 +1,16 @@
 import './bootstrap';
+import stepper from './componentes/stepper';
+import seletorLocalidade from './componentes/localidade';
+import previsaoClima from './componentes/previsao-clima';
 
+// Componentes Alpine reutilizáveis. Precisam ser registrados aqui, no bundle
+// carregado antes do Alpine: scripts empilhados pelas páginas (@push) rodam
+// depois que o Alpine já iniciou e perderiam o evento alpine:init.
 document.addEventListener('alpine:init', () => {
+    Alpine.data('stepper', stepper);
+    Alpine.data('seletorLocalidade', seletorLocalidade);
+    Alpine.data('previsaoClima', previsaoClima);
+
     Alpine.data('sidebarNav', () => ({
         sidebarOpen: false,
 

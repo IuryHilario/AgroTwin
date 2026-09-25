@@ -312,6 +312,12 @@ class ModalManager {
                 input.parentNode.appendChild(errorDiv);
             }
         });
+
+        // Um formulário em etapas (<x-ui.stepper>) usa isto para abrir a etapa
+        // do primeiro campo com erro — senão o erro ficaria numa etapa escondida.
+        form.dispatchEvent(new CustomEvent('validacao-servidor', {
+            detail: { campos: Object.keys(errors) },
+        }));
     }
 
     closeAllModals() {

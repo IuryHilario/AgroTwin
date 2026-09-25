@@ -3,6 +3,8 @@
     readonly, maxlength...) são repassados direto para o <input>.
     O input fica como filho direto do bloco: o modal.js insere a mensagem
     de erro da validação AJAX em input.parentNode.
+    `required` vai para o elemento (não só o asterisco do rótulo): é o que a
+    validação nativa — e a do <x-ui.stepper> — enxerga.
 --}}
 @props([
     'name',
@@ -24,11 +26,11 @@
     @endif
 
     @if ($type === 'textarea')
-        <textarea name="{{ $name }}" id="{{ $name }}" rows="{{ $rows }}" autocomplete="off"
+        <textarea name="{{ $name }}" id="{{ $name }}" rows="{{ $rows }}" autocomplete="off" @required($required)
             @if ($placeholder) placeholder="{{ $placeholder }}" @endif
             {{ $attributes->class(['form-control', 'is-invalid' => $error]) }}>{{ old($name, $value) }}</textarea>
     @else
-        <input type="{{ $type }}" name="{{ $name }}" id="{{ $name }}" value="{{ old($name, $value) }}" autocomplete="off"
+        <input type="{{ $type }}" name="{{ $name }}" id="{{ $name }}" value="{{ old($name, $value) }}" autocomplete="off" @required($required)
             @if ($placeholder) placeholder="{{ $placeholder }}" @endif
             {{ $attributes->class(['form-control', 'is-invalid' => $error]) }}>
     @endif

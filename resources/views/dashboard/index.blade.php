@@ -52,11 +52,17 @@
                             <span><i class="fas fa-location-dot mr-1"></i>{{ $selectedPropriedade->ds_localizacao }}</span>
                             @if($clima = $dadosDashboard['clima'])
                                 <span class="text-white/20">|</span>
-                                <span class="text-white/75" title="Clima atual (OpenWeather)">
+                                <span class="text-white/75" title="Tempo atual">
                                     <i class="fas {{ $clima['icone'] }} mr-1 text-amber-300/80"></i>
                                     <span class="font-readout">{{ $clima['temperatura'] }}°C</span>
                                     · {{ $clima['descricao'] }}
                                 </span>
+                                @php $hoje = $clima['dias'][0] ?? null; @endphp
+                                @if($hoje && $hoje['chance_chuva'] !== null)
+                                    <span class="font-readout text-xs text-sky-300" title="Chance máxima de chuva hoje{{ $hoje['chuva_mm'] ? ' · ' . number_format($hoje['chuva_mm'], 1, ',', '.') . ' mm previstos' : '' }}">
+                                        <i class="fas fa-droplet mr-0.5"></i>chuva hoje {{ $hoje['chance_chuva'] }}%
+                                    </span>
+                                @endif
                                 <span class="font-readout text-xs">
                                     ar {{ $clima['umidade'] }}% · vento {{ $clima['vento_kmh'] }} km/h
                                 </span>

@@ -61,7 +61,7 @@ Fornecer aos agricultores uma solução completa, acessível e de baixo custo pa
 - Interface simples e intuitiva, com tema claro/escuro
 
 ### 8. **Dados Climáticos**
-- Clima atual da cidade da propriedade (OpenWeatherMap) no painel do dashboard e nos detalhes da propriedade
+- Tempo atual, chance de chuva e previsão de 5 dias (Open-Meteo) pelas coordenadas da propriedade, no dashboard e nos detalhes da propriedade
 - `ClimaService` com cache de 30 minutos e timeout curto: se a API falhar, a tela segue funcionando sem o bloco de clima
 
 ## 🛠️ Stack Tecnológico
@@ -102,7 +102,7 @@ Fornecer aos agricultores uma solução completa, acessível e de baixo custo pa
 - **Laravel Pint** - Code formatting
 
 ### Integrações
-- **OpenWeatherMap API** - Clima atual no dashboard e nos detalhes da propriedade
+- **Open-Meteo** - Previsão do tempo, chance de chuva, evapotranspiração (ET0) e geocodificação de municípios, sem chave de API
 
 ## 🏗️ Arquitetura IoT em Camadas
 
@@ -236,10 +236,9 @@ Regras condicionais avaliam
    # Opcional — notificação de alertas por e-mail
    MAIL_MAILER=log
    QUEUE_CONNECTION=database
-
-   # Opcional — clima atual no dashboard
-   OPENWEATHER_API_KEY=sua_chave_api
    ```
+
+   A previsão do tempo usa o Open-Meteo, que não exige chave de API.
 
 5. **Execute migrations e inicie**
    ```bash
@@ -292,7 +291,7 @@ php artisan migrate --force
 - [x] Relatório de insumo com exportação em PDF e envio por e-mail
 - [x] Telas de autenticação e dashboard redesenhadas (painel escuro de estação + leituras em monoespaçada)
 - [x] Listagens e formulários padronizados (estado vazio, selos de status, datas/números no padrão brasileiro)
-- [x] Clima atual (OpenWeather) no dashboard e exportação em PDF do relatório de sensores
+- [x] Previsão do tempo (Open-Meteo) no dashboard e exportação em PDF do relatório de sensores
 - [x] Regras condicionais de irrigação (automática e manual) + histórico
 - [x] Sistema de alertas e recomendações (persistidas)
 - [x] Notificação de alertas por e-mail (fila)

@@ -51,4 +51,7 @@ Route::middleware(['auth'])->group(function () {
 
     // // Rotas de Configurações
     require __DIR__ . '/rotasWeb/configuracoes.php';
+
+    // Busca de município e clima (Open-Meteo) para o seletor de localidade
+    require __DIR__ . '/rotasWeb/localidades.php';
 });
