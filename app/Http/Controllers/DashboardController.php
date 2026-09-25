@@ -87,7 +87,7 @@ class DashboardController extends Controller
             'indicadores' => $indicadores,
             'resumo' => $this->resumirIndicadores($indicadores),
             'irrigacaoAtiva' => (bool) $lavoura?->fl_irrigacao_ativa,
-            'clima' => $this->climaService->atual($propriedade->ds_localizacao),
+            'clima' => $this->climaService->daPropriedade($propriedade),
         ];
     }
 

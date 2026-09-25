@@ -2,12 +2,15 @@
     Formulário de tela cheia (inserir/editar). Enviado via AJAX pelo modal.js
     (classe ajax-form), que mostra o resultado e segue o redirect do controller.
     Os campos entram no slot, dentro de um grid de 12 colunas.
+    :acoes="false" tira os botões Limpar/Salvar — usado quando um <x-ui.stepper>
+    traz a própria navegação.
 --}}
 @props([
     'action',
     'method' => 'POST',
     'title' => null,
     'descricao' => null,
+    'acoes' => true,
 ])
 
 <form action="{{ $action }}" method="POST" {{ $attributes->class('ajax-form form-section') }}>
@@ -29,12 +32,14 @@
         {{ $slot }}
     </div>
 
-    <div class="form-actions">
-        <button type="reset" class="btn btn-secondary">
-            <i class="fas fa-eraser"></i> Limpar
-        </button>
-        <button type="submit" class="btn btn-primary">
-            <i class="fas fa-check"></i> Salvar
-        </button>
-    </div>
+    @if ($acoes)
+        <div class="form-actions">
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-eraser"></i> Limpar
+            </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i> Salvar
+            </button>
+        </div>
+    @endif
 </form>

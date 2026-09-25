@@ -41,6 +41,31 @@
     display: none !important;
 }
 
+/* Pino do <x-form.localidade>: gota verde feita em CSS (os PNGs padrão do
+   Leaflet quebram o caminho quando empacotados pelo Vite). */
+.pino-localidade {
+    background: none;
+    border: 0;
+}
+
+.pino-localidade span {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 24px;
+    height: 24px;
+    border: 3px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    background: #059669;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+    transform: rotate(-45deg);
+}
+
+/* Mapa do Leaflet no tema escuro: tiles um pouco mais escuros, sem inverter cores. */
+.dark .leaflet-tile-pane {
+    filter: brightness(0.8) contrast(1.1);
+}
+
 /*
  * Classes de componente reutilizadas em muitas telas (botões e cards).
  * Definidas uma única vez via @apply para evitar repetir a mesma

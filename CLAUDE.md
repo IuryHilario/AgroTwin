@@ -108,8 +108,13 @@ Componentes Blade disponíveis (todos anônimos, com `@props` declarados — nã
 - `<x-ui.acoes-linha>` — botões de ação da linha (3 visíveis, o resto no menu "Mais ações"); lê `$item->setFuncionalidades()`
 - `<x-ui.selo tom="ok|alerta|erro|info|neutro">` — selo de status
 - `<x-ui.section-header>` — cabeçalho das telas internas. `modulo` (propriedades, lavouras, insumos, sensores, alertas, recomendacoes, conta) define cor, ícone e rótulo — a mesma identidade na listagem, no cadastro e na edição. Aceita `etapa` ("Cadastro"/"Edição"), `subtitle`, `stats` (números rápidos), `acao` (botão principal; no mobile ele vira o botão flutuante) e `buttons`
-- `<x-form.form>`, `<x-form.form-modal>`, `<x-form.input>`, `<x-form.select>` — formulários. Input e select repassam atributos extras (`step`, `min`, `max`, `readonly`…) ao elemento e aceitam `ajuda` (texto de apoio)
+- `<x-form.form>`, `<x-form.form-modal>`, `<x-form.input>`, `<x-form.select>` — formulários. Input e select repassam atributos extras (`step`, `min`, `max`, `readonly`…) ao elemento, aceitam `ajuda` (texto de apoio) e colocam `required` no próprio elemento (não só o asterisco). `<x-form.form :acoes="false">` tira os botões Limpar/Salvar
 - `<x-auth.campo>` — campo das telas de autenticação (rótulo + input + olho de senha + erro)
+- `<x-ui.stepper>` + `<x-ui.etapa>` + `<x-ui.resumo-etapas>` — formulário em etapas com validação por etapa (nativa do HTML + evento `etapa-validar`) e revisão automática. Guia completo em `docs/stepper-system.md`
+- `<x-form.localidade>` — busca de município (Open-Meteo), GPS e mapa Leaflet com pino arrastável; grava `nu_latitude`, `nu_longitude` e `ds_localizacao`. O Leaflet é importado sob demanda (chunk separado), só quando o seletor aparece
+- `<x-ui.previsao-clima>` — prévia do tempo no ponto marcado no formulário
+
+Os componentes Alpine reutilizáveis (`stepper`, `seletorLocalidade`, `previsaoClima`) ficam em `resources/js/componentes/` e são registrados em `resources/js/app.js`, que carrega antes do Alpine. Script empilhado por página (`@push`) roda depois que o Alpine iniciou e não consegue registrar componente.
 
 Colunas da listagem (`:arTableHead`): `['label' => …, 'key' => …]` mais, opcionalmente:
 - `'tipo'` — `texto` (padrão; enum vira `label()`), `data`, `data_hora`, `numero` (com `'casas'` e `'sufixo'`), `status` (selo colorido para ativo/inativo/colhida/encerrada e warning/critical/info), `booleano` (com `'rotuloSim'`, `'rotuloNao'`, `'tomSim'`, `'tomNao'`)
@@ -172,12 +177,14 @@ Sensores (CRUD + token de dispositivo + detecção de sensor mudo pela última l
 lavoura), Alertas, Recomendações por regras condicionais, Irrigação (automática e manual, com
 histórico), Relatórios de sensores — diagnóstico do solo com índice de saúde, situação por parâmetro,
 tendência e ações sugeridas (`DiagnosticoSoloService`), com exportação em PDF —, API REST de ingestão (autenticada por
-token + rate limiting), Clima atual via OpenWeather (`ClimaService`, com cache de 30 min) no dashboard e
-nos detalhes da propriedade.
+token + rate limiting), Previsão do tempo via Open-Meteo (`ClimaService`, por latitude/longitude, cache de
+30 min: tempo atual, chance de chuva nas próximas 6h, 5 dias com chuva prevista e ET0) no dashboard e nos
+detalhes da propriedade, cadastro de propriedade em etapas com seletor de localidade no mapa.
 
 **Parciais:**
 - Testes — cobrem API de sensor, alertas (serviço e tela), irrigação, recomendações, diagnóstico dos
-  relatórios, limites por cultura, busca/paginação e isolamento multi-tenant; não cobrem auth
+  relatórios, limites por cultura, busca/paginação, isolamento multi-tenant, cadastro de propriedade e os
+  serviços do Open-Meteo (com `Http::fake`); não cobrem auth nem o JavaScript dos componentes
 - Firmware — `firmware/esp32-solo-7em1/` existe; o `esp32-irrigacao/` citado no README foi removido no commit `7005192`
 
 **Não iniciados:** MQTT (hoje é REST direto), InfluxDB (hoje é MariaDB), TLS no dispositivo,
@@ -212,6 +219,12 @@ Deep Sleep no ESP32, papéis admin/usuário, 2FA, log de auditoria, Machine Lear
 - **Telas de modal abertas direto** — `responderView()` devolve JSON no AJAX e, na navegação normal,
   embrulha a mesma view em `layouts.pagina-modal`. Sem isso, abrir `/lavouras/1/limites` (ou qualquer
   `detalhar`) pela URL entregava o HTML do modal sem layout nem CSS.
+- **Clima (Open-Meteo)** — `LocalidadeService` (geocodificação de município) e `ClimaService` (previsão),
+  sem chave de API, chamados pelo servidor (`/localidades/buscar` e `/localidades/clima`, com throttle) e
+  nunca direto do navegador. `LocalidadeService::buscar()` devolve `[]` quando não acha e `null` quando a
+  API não respondeu — a falha fica só 2 min no cache, para não se passar por "município inexistente".
+  Propriedade antiga sem coordenadas cai na geocodificação de `ds_localizacao`. Nos testes, o `TestCase`
+  chama `Http::preventStrayRequests()`: nada sai para a internet sem `Http::fake()`.
 - **Componentes de listagem** — `<x-ui.responsive-table-card>` recebe o paginador e a busca; `<x-ui.celula>`
   formata a coluna pelo `tipo` (inclui `conexao`, `validade` e `estoque`); `<x-ui.paginacao>` e `<x-ui.busca>`
   aparecem sozinhos a partir dessas props.
