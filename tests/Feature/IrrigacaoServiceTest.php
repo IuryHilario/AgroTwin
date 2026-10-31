@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\HistoricoIrrigacao;
 use App\Services\IrrigacaoService;
 use App\Services\SensorReadingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,5 +95,20 @@ class IrrigacaoServiceTest extends TestCase
             'id_lavoura' => $lavoura->id_lavoura,
             'dt_fim' => null,
         ]);
+    }
+
+    public function test_duracao_formatada_nao_mostra_minutos_quebrados(): void
+    {
+        $irrigacao = new HistoricoIrrigacao();
+        $irrigacao->dt_inicio = now();
+
+        $irrigacao->dt_fim = now()->addSeconds(38);
+        $this->assertSame('38 s', $irrigacao->getDuracaoFormatada());
+
+        $irrigacao->dt_fim = now()->addSeconds(5 * 60 + 40);
+        $this->assertSame('5 min', $irrigacao->getDuracaoFormatada());
+
+        $irrigacao->dt_fim = now()->addSeconds(75 * 60 + 59);
+        $this->assertSame('1h15min', $irrigacao->getDuracaoFormatada());
     }
 }

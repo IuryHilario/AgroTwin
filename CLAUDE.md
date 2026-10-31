@@ -143,8 +143,7 @@ Complementos:
 
 ### Banco de dados
 
-- **MariaDB** — todos os dados relacionais (usuários, propriedades, lavouras, insumos, sensores)
-- **InfluxDB** — séries temporais de sensores (ainda não integrado; variáveis: `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_BUCKET`, `INFLUXDB_ORG`)
+- **MariaDB** — todos os dados, inclusive as leituras dos sensores (`leituras_sensor`). Só o `SensorReadingService` fala com o model `LeituraSensor`
 
 Migrations customizadas ficam em `database/migrations/custom/`.
 
@@ -174,8 +173,8 @@ Migrations customizadas ficam em `database/migrations/custom/`.
 **Prontos:** Autenticação (login, cadastro, recuperação de senha, throttle de 5 tentativas/min),
 Propriedades, Lavouras, Insumos (CRUD + estoque + aplicação + relatório com PDF e e-mail),
 Sensores (CRUD + token de dispositivo + detecção de sensor mudo pela última leitura), Dashboard (dados reais, avaliados contra as faixas da
-lavoura), Alertas, Recomendações por regras condicionais, Irrigação (automática e manual, com
-histórico), Relatórios de sensores — diagnóstico do solo com índice de saúde, situação por parâmetro,
+lavoura), Alertas, Recomendações por regras condicionais, Irrigação (decidida no ESP32 pela faixa da lavoura;
+o servidor guarda o histórico), Relatórios de sensores — diagnóstico do solo com índice de saúde, situação por parâmetro,
 tendência e ações sugeridas (`DiagnosticoSoloService`), com exportação em PDF —, API REST de ingestão (autenticada por
 token + rate limiting), Previsão do tempo via Open-Meteo (`ClimaService`, por latitude/longitude, cache de
 30 min: tempo atual, chance de chuva nas próximas 6h, 5 dias com chuva prevista e ET0) no dashboard e nos
@@ -185,13 +184,17 @@ detalhes da propriedade, cadastro de propriedade em etapas com seletor de locali
 - Testes — cobrem API de sensor, alertas (serviço e tela), irrigação, recomendações, diagnóstico dos
   relatórios, limites por cultura, busca/paginação, isolamento multi-tenant, cadastro de propriedade e os
   serviços do Open-Meteo (com `Http::fake`); não cobrem auth nem o JavaScript dos componentes
-- Firmware — `firmware/esp32-solo-7em1/` existe; o `esp32-irrigacao/` citado no README foi removido no commit `7005192`
+- Firmware — o ESP32 em campo roda uma versão com Deep Sleep, relé da válvula e histerese (liga abaixo do
+  mínimo, desliga no máximo, no máximo 1h seguida), que consulta `/api/sensores/{id}/config` e `/limites`.
+  O `firmware/esp32-solo-7em1/src/main.cpp` versionado ainda é a versão anterior, sem isso
+- Irrigação manual — o botão do dashboard registra o histórico, mas o firmware não consulta esse comando,
+  então a válvula não é acionada por ele
 
-**Não iniciados:** MQTT (hoje é REST direto), InfluxDB (hoje é MariaDB), TLS no dispositivo,
-Deep Sleep no ESP32, papéis admin/usuário, 2FA, log de auditoria, Machine Learning, app mobile.
+**Fora do escopo (trabalhos futuros):** TLS no dispositivo, papéis admin/usuário, 2FA, log de auditoria,
+Machine Learning, app mobile.
 
-> MQTT e InfluxDB constam na proposta original do TCC. O desvio para REST/MariaDB está
-> justificado no README — confirme com o orientador antes de investir tempo neles.
+> A comunicação ESP32 → servidor é HTTP/REST e o armazenamento é MariaDB. MQTT e InfluxDB, previstos na
+> proposta original, não fazem parte do sistema e foram removidos do código e do README — não os reintroduza.
 
 ### Padrões transversais das telas
 

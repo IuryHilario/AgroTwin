@@ -2,9 +2,9 @@
 
 /**
  * Único ponto de escrita/leitura das leituras de sensores.
- * Hoje armazena em MariaDB (leituras_sensor); se o projeto migrar para
- * InfluxDB no futuro, é só reimplementar os métodos desta classe —
- * nenhum outro lugar do sistema fala diretamente com o model LeituraSensor.
+ * Armazena em MariaDB (leituras_sensor); trocar o armazenamento é só
+ * reimplementar os métodos desta classe — nenhum outro lugar do sistema
+ * fala diretamente com o model LeituraSensor.
  */
 
 namespace App\Services;

@@ -13,8 +13,8 @@ use App\Services\SensorReadingService;
 class SensorLeituraController extends Controller
 {
     /**
-     * Recebe uma leitura de um sensor (chamado pelo ESP32/dispositivo no futuro,
-     * direto ou via uma ponte MQTT->HTTP). Autenticado pelo token do próprio sensor.
+     * Recebe uma leitura de um sensor, enviada pelo ESP32.
+     * Autenticado pelo token do próprio sensor.
      */
     public function store(
         StoreLeituraRequest $request,

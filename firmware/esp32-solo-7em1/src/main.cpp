@@ -1,166 +1,284 @@
-// Leitor ESP32 para o sensor de solo RS485 7-em-1 (umidade, temperatura,
-// condutividade/EC, pH, nitrogênio, fósforo, potássio) via Modbus RTU,
-// enviando cada leitura para a API de ingestão do AgroTwin.
-//
-// Antes de compilar: copie include/config.example.h para include/config.h e
-// preencha Wi-Fi, URL do servidor e os tokens de cada sensor cadastrado no
-// AgroTwin. Veja o README.md desta pasta para o esquema de ligação.
-
-#include <Arduino.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 #include <ModbusMaster.h>
-#include "config.h"
+#include <ArduinoJson.h>
 
-// Endereços dos registradores Modbus (holding registers, function code 0x03).
-// Este é o mapeamento mais comum para sensores RS485 7-em-1 deste tipo — se as
-// leituras vierem estranhas, confira o manual/QR code que acompanha o sensor
-// e ajuste os valores abaixo.
-#define REG_UMIDADE       0x0000
-#define REG_TEMPERATURA   0x0001
-#define REG_CONDUTIVIDADE 0x0002
-#define REG_PH            0x0003
-#define REG_NITROGENIO    0x0004
-#define REG_FOSFORO       0x0005
-#define REG_POTASSIO      0x0006
-#define REG_COUNT         7
+// ===== CONFIGURAÇÃO WI-FI =====
+const char* ssid = "NOME_WIFI"; // Nome do Wi-Fi
+const char* password = "SENHA_WIFI"; // Senha do Wi-Fi
+
+// ===== CONFIGURAÇÃO DO SERVIDOR =====
+const char* servidor = "URL_COMPLETA_DO_SERVIDOR"; // Servidor (http://127.0.0.1)
+
+// ===== CONFIGURAÇÃO DEEP SLEEP =====
+#define TEMPO_SLEEP_PADRAO_SEGUNDOS 300 // 5 minutos entre ciclos normais
+#define TEMPO_ESPERA_IRRIGACAO_SEGUNDOS 300 // 5 minutos entre checagens durante irrigacao
+#define TEMPO_MAXIMO_IRRIGACAO_SEGUNDOS 3600 // seguranca: nunca irriga mais que 1 hora seguida
+#define uS_TO_S_FACTOR 1000000ULL
+
+// ===== CONFIGURAÇÃO MAX485 =====
+#define MAX485_DE_RE 4
+#define RX_PIN 16
+#define TX_PIN 17
+
+// ===== CONFIGURAÇÃO RELÉ / VÁLVULA =====
+#define RELE_PIN 5
+#define RELE_LIGADO LOW
+#define RELE_DESLIGADO HIGH
 
 ModbusMaster node;
 
-// Intervalo entre leituras — começa com o valor padrão de config.h e é
-// substituído pelo valor configurado no AgroTwin (por lavoura) assim que o
-// dispositivo consegue buscar sua configuração pela primeira vez.
-unsigned long intervaloLeituraMs = READ_INTERVAL_MS;
+struct SensorInfo {
+  const char* nome;
+  int id;
+  const char* token;
+};
 
-void modbusPreTransmission() {
-    digitalWrite(RS485_DE_RE_PIN, HIGH);
+SensorInfo sensores[] = {
+  {"umidade",       1, "token_umidade"}, // Token Gerado ao Inserir o Sensor Umidade no Software
+  {"ph",             2, "token_ph"}, // Token Gerado ao Inserir o Sensor PH no Software
+  {"temperatura",    3, "token_temperatura"}, // Token Gerado ao Inserir o Sensor Temperatura no Software
+  {"condutividade",  4, "token_condutividade"}, // Token Gerado ao Inserir o Sensor Condutividade no Software
+  {"nitrogenio",     5, "token_nitrogenio"}, // Token Gerado ao Inserir o Sensor Nitrogenio no Software
+  {"potassio",       6, "token_potassio"}, // Token Gerado ao Inserir o Sensor Potassio no Software
+  {"fosforo",        7, "token_fosforo"} // Token Gerado ao Inserir o Sensor Fosforo no Software
+};
+
+const int NUM_SENSORES = 7; // Quantidade de buscas
+const int INDICE_SENSOR_UMIDADE = 0; // Indice do sensor de umidade
+
+void preTransmission() { digitalWrite(MAX485_DE_RE, HIGH); }
+void postTransmission() { digitalWrite(MAX485_DE_RE, LOW); }
+
+bool conectarWiFi(int timeoutSegundos = 15) {
+  Serial.print("Conectando ao Wi-Fi");
+  WiFi.begin(ssid, password);
+  int tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < (timeoutSegundos * 2)) {
+    delay(500);
+    Serial.print(".");
+    tentativas++;
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(" conectado!");
+    return true;
+  }
+  Serial.println(" falhou (timeout).");
+  return false;
 }
 
-void modbusPostTransmission() {
-    digitalWrite(RS485_DE_RE_PIN, LOW);
+bool enviarLeitura(int sensorId, const char* token, float valor) {
+  HTTPClient http;
+  String url = String(servidor) + "/api/sensores/" + String(sensorId) + "/leituras";
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Accept", "application/json");
+  http.addHeader("Authorization", String("Bearer ") + token);
+
+  JsonDocument doc;
+  doc["valor"] = valor;
+  String body;
+  serializeJson(doc, body);
+
+  int httpCode = http.POST(body);
+  bool sucesso = (httpCode == 200 || httpCode == 201);
+  Serial.print(sucesso ? "OK -> " : "FALHA (");
+  if (!sucesso) { Serial.print(httpCode); Serial.print(") -> "); }
+  Serial.println(url);
+  http.end();
+  return sucesso;
 }
 
-void conectarWifi() {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+long buscarIntervaloSegundos() {
+  HTTPClient http;
+  String url = String(servidor) + "/api/sensores/" + String(sensores[0].id) + "/config";
+  http.begin(url);
+  http.addHeader("Accept", "application/json");
+  http.addHeader("Authorization", String("Bearer ") + sensores[0].token);
 
-    Serial.printf("Conectando ao Wi-Fi \"%s\"", WIFI_SSID);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.printf("\nConectado! IP: %s\n", WiFi.localIP().toString().c_str());
-}
+  int httpCode = http.GET();
+  long intervaloSegundos = TEMPO_SLEEP_PADRAO_SEGUNDOS;
 
-// Envia uma leitura para a API do AgroTwin. Não faz nada se o sensor não
-// estiver configurado (token vazio), permitindo desativar parâmetros que o
-// seu sensor físico não possua.
-void enviarLeitura(int sensorId, const char *token, float valor) {
-    if (sensorId <= 0 || strlen(token) == 0) {
-        return;
-    }
-
-    HTTPClient http;
-    String url = String(API_BASE_URL) + "/api/sensores/" + String(sensorId) + "/leituras";
-
-    http.begin(url);
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("Accept", "application/json");
-    http.addHeader("Authorization", String("Bearer ") + token);
-
+  if (httpCode == 200) {
+    String payload = http.getString();
     JsonDocument doc;
-    doc["valor"] = valor;
-    String body;
-    serializeJson(doc, body);
-
-    int status = http.POST(body);
-    Serial.printf("  -> sensor #%d valor=%.2f => HTTP %d\n", sensorId, valor, status);
-    if (status != 200 && status != 201) {
-        Serial.println("     " + http.getString());
+    if (!deserializeJson(doc, payload) && doc["intervalo_leitura_ms"].is<long>()) {
+      intervaloSegundos = (long)doc["intervalo_leitura_ms"] / 1000;
     }
-
-    http.end();
+  }
+  http.end();
+  return intervaloSegundos;
 }
 
-// Busca o intervalo de leitura configurado pelo agricultor para a lavoura
-// deste sensor (tela de editar Lavoura no AgroTwin). Se a busca falhar por
-// qualquer motivo, mantém o valor padrão de config.h.
-void buscarIntervaloLeitura() {
-    if (strlen(TOKEN_UMIDADE) == 0 || ID_UMIDADE <= 0) {
-        return;
+bool buscarLimitesUmidade(float &valorMin, float &valorMax) {
+  HTTPClient http;
+  int sensorId = sensores[INDICE_SENSOR_UMIDADE].id;
+  const char* token = sensores[INDICE_SENSOR_UMIDADE].token;
+
+  String url = String(servidor) + "/api/sensores/" + String(sensorId) + "/limites";
+  http.begin(url);
+  http.addHeader("Accept", "application/json");
+  http.addHeader("Authorization", String("Bearer ") + token);
+
+  int httpCode = http.GET();
+  bool sucesso = false;
+
+  if (httpCode == 200) {
+    String payload = http.getString();
+    JsonDocument doc;
+    if (!deserializeJson(doc, payload)) {
+      if (!doc["valor_min"].isNull() && !doc["valor_max"].isNull()) {
+        valorMin = doc["valor_min"];
+        valorMax = doc["valor_max"];
+        sucesso = true;
+      }
     }
+  }
+  http.end();
+  return sucesso;
+}
 
-    HTTPClient http;
-    String url = String(API_BASE_URL) + "/api/sensores/" + String(ID_UMIDADE) + "/config";
+// Le a umidade atual do sensor (retorna -1 em caso de erro)
+float lerUmidade() {
+  uint8_t result = node.readHoldingRegisters(0x0000, 7);
+  if (result == node.ku8MBSuccess) {
+    return node.getResponseBuffer(0) / 10.0;
+  }
+  return -1;
+}
 
-    http.begin(url);
-    http.addHeader("Accept", "application/json");
-    http.addHeader("Authorization", String("Bearer ") + TOKEN_UMIDADE);
-
-    int status = http.GET();
-    if (status == 200) {
-        JsonDocument doc;
-        deserializeJson(doc, http.getString());
-        intervaloLeituraMs = doc["intervalo_leitura_ms"] | READ_INTERVAL_MS;
-        Serial.printf("Intervalo de leitura configurado no servidor: %lums\n", intervaloLeituraMs);
-    } else {
-        Serial.printf("Nao foi possivel buscar o intervalo configurado (HTTP %d), usando o padrao.\n", status);
-    }
-
-    http.end();
+void irParaDeepSleep(long segundos) {
+  Serial.print("Entrando em Deep Sleep por ");
+  Serial.print(segundos);
+  Serial.println("s...");
+  digitalWrite(RELE_PIN, RELE_DESLIGADO); // garante valvula desligada antes de dormir
+  WiFi.disconnect(true);
+  esp_sleep_enable_timer_wakeup(segundos * uS_TO_S_FACTOR);
+  Serial.flush();
+  esp_deep_sleep_start();
 }
 
 void setup() {
-    Serial.begin(115200);
-    delay(1000);
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("=== AgroTwin - Ciclo com Histerese ===");
 
-    pinMode(RS485_DE_RE_PIN, OUTPUT);
-    digitalWrite(RS485_DE_RE_PIN, LOW);
+  pinMode(RELE_PIN, OUTPUT);
+  digitalWrite(RELE_PIN, RELE_DESLIGADO);
 
-    Serial2.begin(MODBUS_BAUD_RATE, SERIAL_8N1, RS485_RX_PIN, RS485_TX_PIN);
-    node.begin(MODBUS_SLAVE_ID, Serial2);
-    node.preTransmission(modbusPreTransmission);
-    node.postTransmission(modbusPostTransmission);
+  Serial2.begin(4800, SERIAL_8N1, RX_PIN, TX_PIN);
+  pinMode(MAX485_DE_RE, OUTPUT);
+  digitalWrite(MAX485_DE_RE, LOW);
 
-    conectarWifi();
-    buscarIntervaloLeitura();
-}
+  node.begin(1, Serial2);
+  node.preTransmission(preTransmission);
+  node.postTransmission(postTransmission);
 
-void loop() {
-    Serial.println("Lendo sensor via Modbus...");
+  if (!conectarWiFi()) {
+    irParaDeepSleep(TEMPO_SLEEP_PADRAO_SEGUNDOS);
+    return;
+  }
 
-    uint8_t resultado = node.readHoldingRegisters(REG_UMIDADE, REG_COUNT);
+  // ===== LEITURA INICIAL DE TODOS OS PARAMETROS =====
+  uint8_t result = node.readHoldingRegisters(0x0000, 7);
 
-    if (resultado == node.ku8MBSuccess) {
-        float umidade = node.getResponseBuffer(REG_UMIDADE) / 10.0;
-        float temperatura = ((int16_t) node.getResponseBuffer(REG_TEMPERATURA)) / 10.0;
-        float condutividade = node.getResponseBuffer(REG_CONDUTIVIDADE);
-        float ph = node.getResponseBuffer(REG_PH) / 10.0;
-        float nitrogenio = node.getResponseBuffer(REG_NITROGENIO);
-        float fosforo = node.getResponseBuffer(REG_FOSFORO);
-        float potassio = node.getResponseBuffer(REG_POTASSIO);
+  if (result == node.ku8MBSuccess) {
+    float valores[7];
+    valores[0] = node.getResponseBuffer(0) / 10.0;
+    valores[1] = node.getResponseBuffer(3) / 10.0;
+    valores[2] = node.getResponseBuffer(1) / 10.0;
+    valores[3] = node.getResponseBuffer(2);
+    valores[4] = node.getResponseBuffer(4);
+    valores[5] = node.getResponseBuffer(6);
+    valores[6] = node.getResponseBuffer(5);
 
-        Serial.printf(
-            "Umidade=%.1f%% Temp=%.1fC EC=%.0f pH=%.1f N=%.0f P=%.0f K=%.0f\n",
-            umidade, temperatura, condutividade, ph, nitrogenio, fosforo, potassio
-        );
+    Serial.println("-------- ENVIANDO LEITURAS --------");
+    for (int i = 0; i < NUM_SENSORES; i++) {
+      Serial.print(sensores[i].nome);
+      Serial.print(": ");
+      Serial.print(valores[i]);
+      Serial.print(" -> ");
+      enviarLeitura(sensores[i].id, sensores[i].token, valores[i]);
+      delay(300);
+    }
+    Serial.println("------------------------------------");
 
-        if (WiFi.status() == WL_CONNECTED) {
-            enviarLeitura(ID_UMIDADE, TOKEN_UMIDADE, umidade);
-            enviarLeitura(ID_TEMPERATURA, TOKEN_TEMPERATURA, temperatura);
-            enviarLeitura(ID_CONDUTIVIDADE, TOKEN_CONDUTIVIDADE, condutividade);
-            enviarLeitura(ID_PH, TOKEN_PH, ph);
-            enviarLeitura(ID_NITROGENIO, TOKEN_NITROGENIO, nitrogenio);
-            enviarLeitura(ID_FOSFORO, TOKEN_FOSFORO, fosforo);
-            enviarLeitura(ID_POTASSIO, TOKEN_POTASSIO, potassio);
-        } else {
-            Serial.println("Wi-Fi desconectado, tentando reconectar...");
-            conectarWifi();
+    // ===== LOGICA DE HISTERESE =====
+    float umidade = valores[INDICE_SENSOR_UMIDADE];
+    float limiteMin, limiteMax;
+
+    if (buscarLimitesUmidade(limiteMin, limiteMax)) {
+      Serial.print("Umidade atual: ");
+      Serial.print(umidade);
+      Serial.print("%  |  Min: ");
+      Serial.print(limiteMin);
+      Serial.print("%  Max: ");
+      Serial.println(limiteMax);
+
+      if (umidade < limiteMin) {
+        Serial.println(">>> Umidade abaixo do minimo. Iniciando irrigacao...");
+
+        unsigned long inicioIrrigacaoTotal = millis();
+        bool atingiuMaximo = false;
+
+        while (!atingiuMaximo) {
+          // Liga a valvula
+          digitalWrite(RELE_PIN, RELE_LIGADO);
+          Serial.println(">>> Valvula LIGADA.");
+
+          // Espera o tempo definido (SEM deep sleep, para nao perder o estado do rele)
+          Serial.print("Aguardando ");
+          Serial.print(TEMPO_ESPERA_IRRIGACAO_SEGUNDOS);
+          Serial.println("s antes de checar novamente...");
+          delay((unsigned long)TEMPO_ESPERA_IRRIGACAO_SEGUNDOS * 1000);
+
+          // Desliga temporariamente para medir (evita interferencia na leitura)
+          digitalWrite(RELE_PIN, RELE_DESLIGADO);
+          delay(1000);
+
+          umidade = lerUmidade();
+          Serial.print("Verificando... Umidade agora: ");
+          Serial.print(umidade);
+          Serial.println("%");
+
+          if (umidade < 0) {
+            Serial.println(">>> Erro na leitura durante irrigacao. Abortando por seguranca.");
+            break;
+          }
+
+          if (umidade >= limiteMax) {
+            atingiuMaximo = true;
+            Serial.println(">>> Umidade atingiu o MAXIMO! Finalizando irrigacao.");
+          }
+
+          // Verificacao de seguranca: nunca irriga por mais que o tempo maximo definido
+          if ((millis() - inicioIrrigacaoTotal) / 1000 > TEMPO_MAXIMO_IRRIGACAO_SEGUNDOS) {
+            Serial.println(">>> TIMEOUT DE SEGURANCA atingido! Interrompendo irrigacao.");
+            break;
+          }
         }
+
+        digitalWrite(RELE_PIN, RELE_DESLIGADO);
+        Serial.println(">>> Irrigacao encerrada. Valvula desligada.");
+
+        // Envia a leitura final apos a irrigacao
+        enviarLeitura(sensores[INDICE_SENSOR_UMIDADE].id, sensores[INDICE_SENSOR_UMIDADE].token, umidade);
+
+      } else {
+        Serial.println(">>> Umidade dentro da faixa ideal. Nenhuma acao necessaria.");
+      }
     } else {
-        Serial.printf("Falha na leitura Modbus (codigo 0x%02X)\n", resultado);
+      Serial.println("Nao foi possivel buscar limites. Irrigacao nao acionada por seguranca.");
     }
 
-    delay(intervaloLeituraMs);
+  } else {
+    Serial.print("Erro na leitura do sensor. Codigo: 0x");
+    Serial.println(result, HEX);
+  }
+
+  // ===== DEEP SLEEP NORMAL (so acontece quando NAO esta irrigando) =====
+  long intervalo = buscarIntervaloSegundos();
+  irParaDeepSleep(intervalo);
 }
+
+void loop() {}

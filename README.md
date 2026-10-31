@@ -2,16 +2,16 @@
 
 ## 📋 Descrição
 
-**AgroTwin** é uma plataforma inteligente para gestão integrada de propriedades agrícolas, desenvolvida com Laravel 12 e Blade Templates. O sistema centraliza informações sobre propriedades, lavouras, insumos, sensores IoT e recomendações baseadas em regras condicionais para otimizar a produção agrícola, com foco em hortaliças para pequenos e médios produtores.
+**AgroTwin** é uma plataforma para gestão integrada de propriedades agrícolas, desenvolvida com Laravel 12 e Blade. O sistema reúne propriedades, lavouras, insumos e sensores IoT de solo, e usa regras condicionais para gerar alertas, recomendações e controlar a irrigação. O foco são pequenos e médios produtores de hortaliças.
 
 ## 🎯 Objetivo
 
-Fornecer aos agricultores uma solução completa, acessível e de baixo custo para:
-- Monitorar umidade, NPK, pH e temperatura do solo em tempo real
-- Automatizar a irrigação com base em regras condicionais
+Oferecer ao agricultor uma solução acessível e de baixo custo para:
+- Monitorar umidade, NPK, pH, temperatura e condutividade do solo
+- Automatizar a irrigação com base nas faixas ideais de cada lavoura
 - Gerenciar propriedades, lavouras e insumos
-- Receber alertas em situações críticas
-- Acompanhar histórico de leituras e irrigações
+- Receber alertas quando o solo sai da faixa adequada
+- Acompanhar o histórico de leituras e irrigações e o diagnóstico do solo
 
 ## 👥 Público-Alvo
 
@@ -19,113 +19,148 @@ Fornecer aos agricultores uma solução completa, acessível e de baixo custo pa
 - Gestores de propriedades agrícolas
 - Agrônomos e consultores agrícolas
 
-## ✨ Funcionalidades Principais
+## ✨ Funcionalidades
 
-### 1. **Monitoramento IoT do Solo**
-- Coleta de umidade, NPK (N, P, K), pH, temperatura e condutividade elétrica via sensor NPKPHCTH-S 7-em-1
-- Transmissão em tempo real via API REST (`POST /api/sensores/{id}/leituras`), autenticada por token de dispositivo e com rate limiting — a proposta original do TCC previa MQTT/broker Mosquitto; foi simplificado para REST para adiantar a implementação antes do hardware chegar (ver Roadmap)
-- Armazenamento das leituras no MariaDB — a proposta original previa InfluxDB para as séries temporais; o `SensorReadingService` isola esse ponto para facilitar a troca depois
-- Intervalo de leitura configurável pelo agricultor (por Lavoura), buscado pelo firmware do servidor no boot
+### 1. Monitoramento IoT do Solo
+- Coleta de umidade, NPK (N, P, K), pH, temperatura e condutividade elétrica pelo sensor NPKPHCTH-S 7-em-1
+- Envio das leituras pela API REST (`POST /api/sensores/{id}/leituras`), autenticada por token de dispositivo e com rate limiting
+- Leituras armazenadas no MariaDB e avaliadas na chegada contra a faixa configurada da lavoura
+- Intervalo de leitura configurável por lavoura, consultado pelo ESP32 (`GET /api/sensores/{id}/config`)
+- Detecção de sensor sem comunicação pela data da última leitura
 
-### 2. **Irrigação Inteligente**
-- Acionamento automático da válvula solenoide via regras condicionais, comparando a umidade do solo com os limites configurados
-- Controle manual pelo dashboard (iniciar/parar a qualquer momento)
-- Encerramento automático quando o parâmetro volta ao nível adequado
-- Histórico completo de irrigações (automática e manual), com início, fim e motivo
-- Firmware dedicado (`firmware/esp32-irrigacao/`) que só consulta o servidor e aciona o relé — a decisão fica toda no backend
+### 2. Irrigação Automática
+- O ESP32 busca no servidor a faixa de umidade da lavoura (`GET /api/sensores/{id}/limites`)
+- Abaixo do mínimo, liga a válvula solenoide e irriga até a umidade chegar ao máximo (histerese), com limite de segurança de 1 hora seguida
+- O servidor registra o histórico de irrigações (início, fim, duração, tipo e motivo) e mostra o status no monitoramento da lavoura
+- Ciclo com **Deep Sleep**: o ESP32 acorda, lê o sensor, envia as leituras, decide a irrigação e volta a dormir
 
-### 3. **Gestão de Propriedades e Lavouras**
-- Cadastro de propriedades com tipo de solo, localização (texto) e área
-- Gestão de lavouras com datas de plantio/colheita e status
-- Configuração de limites min/max por parâmetro e por lavoura
+### 3. Propriedades e Lavouras
+- Cadastro de propriedade em etapas (Propriedade → Localidade → Finalização), com busca de município, GPS e mapa para marcar o ponto exato
+- Lavouras com cultura, datas de plantio e colheita, status e intervalo de leitura
+- Faixas ideais (mín./máx.) por parâmetro e por lavoura, com valores sugeridos por cultura preenchidos em um clique
 
-### 4. **Controle de Insumos**
-- Cadastro de fertilizantes, defensivos, sementes e adubos
-- Controle de estoque com entrada/saída
-- Histórico de movimentações e registro de aplicação
+### 4. Insumos
+- Cadastro de fertilizantes, defensivos, sementes, adubos e corretivos
+- Controle de estoque com entradas e saídas e registro de aplicação na lavoura
+- Relatório de insumos com exportação em PDF e envio por e-mail
 
-### 5. **Sistema de Alertas**
-- Alertas quando um parâmetro sai da faixa configurada (umidade, pH, temperatura, NPK, condutividade)
-- Marcar como lido/não lido, notificação por e-mail (fila assíncrona) opcional via Configurações
-- ⚠️ Os níveis de severidade (info/warning/critical) existem no modelo de dados, mas hoje todo alerta é gerado como "warning" — a classificação por gravidade ainda não foi implementada
+### 5. Alertas
+- Alerta quando um parâmetro sai da faixa configurada (umidade, pH, temperatura, NPK, condutividade)
+- Cada alerta é um **episódio**: abre quando o parâmetro sai da faixa, acumula as ocorrências enquanto continua fora e é encerrado quando volta (com histerese de 5%, para não reabrir a cada oscilação)
+- Severidade calculada pelo desvio: *warning* ou *critical* (a partir de 30% além do limite)
+- Marcar como lido e notificação por e-mail na abertura do episódio (fila assíncrona), ativável nas Configurações
 
-### 6. **Regras Condicionais e IA**
-- Regras baseadas em múltiplos parâmetros (umidade, NPK, pH, temperatura, condutividade) para decidir alertas, recomendações e irrigação
-- Recomendações geradas por regras condicionais e salvas no histórico da lavoura
-- Preparado para integração futura de Machine Learning — etapa planejada para o fim do TCC II, ainda não iniciada
+### 6. Recomendações por Regras Condicionais
+- Regras sobre os parâmetros do solo geram recomendações de manejo, salvas no histórico da lavoura
+- A mesma recomendação não se repete dentro de 12 horas
 
-### 7. **Dashboard**
-- Seletor de Propriedade → Lavoura, com indicadores da lavoura selecionada (evita misturar sensores de lavouras diferentes)
-- Gráficos históricos, status dos sensores, alertas ativos e recomendações
-- Tela de Perfil (dados da conta, troca de senha) e Configurações (notificação por e-mail, propriedade padrão do dashboard)
-- Interface simples e intuitiva, com tema claro/escuro
+### 7. Relatórios e Diagnóstico do Solo
+- Índice de saúde do solo, situação de cada parâmetro em relação à faixa ideal e tendência no período
+- Ações sugeridas ao produtor a partir das leituras (`DiagnosticoSoloService`)
+- Gráficos históricos e exportação em PDF
 
-### 8. **Dados Climáticos**
-- Tempo atual, chance de chuva e previsão de 5 dias (Open-Meteo) pelas coordenadas da propriedade, no dashboard e nos detalhes da propriedade
-- `ClimaService` com cache de 30 minutos e timeout curto: se a API falhar, a tela segue funcionando sem o bloco de clima
+### 8. Dashboard
+- Seletor Propriedade → Lavoura, com os indicadores da lavoura selecionada
+- Medidores que posicionam cada leitura dentro da faixa ideal, gráficos históricos, status dos sensores, alertas ativos e recomendações
+- Perfil (dados da conta e troca de senha) e Configurações (notificação por e-mail e propriedade padrão)
+- Tema claro/escuro e layout responsivo
+
+### 9. Dados Climáticos (Open-Meteo)
+- Tempo atual, chance de chuva nas próximas horas e previsão de 5 dias com chuva prevista e evapotranspiração (ET0), pelas coordenadas da propriedade
+- Exibidos no dashboard, nos detalhes da propriedade e no cadastro
+- Cache de 30 minutos e timeout curto: se a API falhar, a tela segue funcionando sem o bloco de clima
+
+### 10. Segurança
+- Login com limite de 5 tentativas por minuto e recuperação de senha por e-mail
+- Isolamento multi-tenant: cada usuário só acessa os próprios dados
+- Validação de todas as entradas por Form Requests e proteção CSRF
 
 ## 🛠️ Stack Tecnológico
 
 ### Hardware (IoT)
-- **ESP32 DevKit V1** - Microcontrolador com Wi-Fi nativo
-- **Sensor NPKPHCTH-S 7-em-1** - Umidade, NPK, pH, condutividade, temperatura (RS485/Modbus)
-- **Válvula Solenoide 12V** - Acionamento da irrigação
-- **Módulo Relé 1 canal** - Interface ESP32 ↔ válvula
-- **Conversor MAX485** - RS485 para TTL (comunicação sensor ↔ ESP32)
+- **ESP32 DevKit V1** — microcontrolador com Wi-Fi nativo
+- **Sensor NPKPHCTH-S 7-em-1** — umidade, NPK, pH, condutividade e temperatura (RS485/Modbus)
+- **Conversor MAX485** — RS485 para TTL (sensor ↔ ESP32)
+- **Módulo relé 1 canal** — interface ESP32 ↔ válvula
+- **Válvula solenoide 12V** — acionamento da irrigação
 
 ### Comunicação
-- **API REST (HTTP/JSON)** - ESP32 → Laravel, autenticada por token de dispositivo (em uso hoje)
-- **Wi-Fi 802.11 b/g/n** - Conectividade
-- **RS485/Modbus RTU** - Comunicação sensor ↔ ESP32
-- **MQTT + TLS/SSL** - Planejado na proposta original, ainda não implementado (ver Roadmap)
+- **RS485 / Modbus RTU** — sensor ↔ ESP32
+- **Wi-Fi 802.11 b/g/n** — conectividade do ESP32
+- **API REST (HTTP/JSON)** — ESP32 ↔ Laravel, autenticada por token de dispositivo
 
 ### Backend
-- **Laravel 12.x** - Framework PHP (MVC)
-- **PHP 8.2+** - Linguagem principal
-- **API REST** - Ingestão de leituras e consulta de estado de irrigação
-- Autenticação própria por e-mail/senha (sem Sanctum/Passport)
-
-### Bancos de Dados
-- **MariaDB** - Todos os dados hoje: usuários, propriedades, lavouras, insumos, sensores, leituras, alertas, recomendações, histórico de irrigação
-- **InfluxDB** - Planejado na proposta original para séries temporais dos sensores; ainda não integrado
+- **Laravel 12** (PHP 8.2+), arquitetura MVC com camadas Entity / Model / Service / Controller
+- **MariaDB** — todos os dados: usuários, propriedades, lavouras, insumos, sensores, leituras, alertas, recomendações e histórico de irrigação
+- **Filas (database)** — envio de e-mails em segundo plano
+- **DomPDF** — exportação de relatórios em PDF
+- Autenticação própria por e-mail e senha
 
 ### Frontend
-- **Blade Templates** - Templates PHP nativo do Laravel
-- **Tailwind CSS 4.x** - Styling responsivo, com tema claro/escuro
-- **Alpine.js 3** - Interatividade (sidebar, modais)
-- **Chart.js** - Gráficos históricos
-- **Vite 6.x** - Build tool
-- **Axios** - Cliente HTTP (dependência do scaffolding padrão do Laravel)
-
-### DevOps
-- **PHPUnit 11.x** - Testes automatizados (`php artisan test`)
-- **Laravel Pint** - Code formatting
+- **Blade** com componentes anônimos reutilizáveis
+- **Tailwind CSS 4** — estilo responsivo, tema claro/escuro
+- **Alpine.js 3** — interatividade (sidebar, modais, formulário em etapas)
+- **Chart.js** — gráficos históricos
+- **Leaflet** — mapa do seletor de localidade
+- **Vite 6** — build dos assets
 
 ### Integrações
-- **Open-Meteo** - Previsão do tempo, chance de chuva, evapotranspiração (ET0) e geocodificação de municípios, sem chave de API
+- **Open-Meteo** — previsão do tempo, chance de chuva, ET0 e geocodificação de municípios, sem chave de API
+
+### Qualidade
+- **PHPUnit 11** — 105 testes automatizados
+- **Laravel Pint** — padronização de código
 
 ## 🏗️ Arquitetura IoT em Camadas
-
-Estrutura conceitual em 4 camadas, conforme definida na proposta do TCC. O que já está implementado hoje aparece indicado; o restante é o que falta para bater 100% com a proposta original.
 
 ```
 ┌─────────────────────────────────────────────────┐
 │  CAMADA 4 — APLICAÇÃO                           │
-│  Dashboard Laravel (MVC) · Login · Gráficos     │
-│  Alertas · Recomendações · Perfil/Configurações │  ✅ Implementado
-├──────────────── API REST (JSON) ────────────────┤
+│  Dashboard · Relatórios e diagnóstico do solo   │
+│  Alertas · Recomendações · Gestão de insumos    │
+├──────────────── HTTP (navegador) ───────────────┤
 │  CAMADA 3 — PROCESSAMENTO / SERVIDOR            │
-│  Backend Laravel · MariaDB (InfluxDB pendente)  │  ✅ Backend/MariaDB
-│  Regras Condicionais · Broker MQTT (pendente)   │  ❌ MQTT pendente
-├──────────────── HTTP hoje / MQTT planejado ─────┤
+│  Backend Laravel · API REST · MariaDB           │
+│  Regras condicionais · Fila de e-mails          │
+│  Integração Open-Meteo                          │
+├──────────────── HTTP/JSON (API REST) ───────────┤
 │  CAMADA 2 — REDE / COMUNICAÇÃO                  │
-│  ESP32 (Gateway) · Wi-Fi · Pré-processamento    │  ✅ Implementado
-│  Deep Sleep (pendente)                          │  ❌ Deep Sleep pendente
-├──────────────── RS485 ──────────────────────────┤
+│  ESP32 (gateway) · Wi-Fi · Pré-processamento    │
+│  Controle da irrigação · Deep Sleep             │
+├──────────────── RS485 / Modbus ─────────────────┤
 │  CAMADA 1 — PERCEPÇÃO                           │
-│  Sensor 7-em-1 · Válvula Solenoide              │  ✅ Firmware pronto,
-│                                                   │     aguardando hardware físico
+│  Sensor 7-em-1 · Relé · Válvula solenoide       │
 └─────────────────────────────────────────────────┘
+```
+
+## 🔄 Fluxo do Sistema
+
+```
+ESP32 acorda do Deep Sleep
+         │
+         │ RS485/Modbus
+         ▼
+Lê o sensor 7-em-1 (umidade, NPK, pH, temperatura, condutividade)
+         │
+         │ HTTP/JSON (token do dispositivo)
+         ▼
+Backend Laravel recebe e grava no MariaDB
+         │
+         ├── Parâmetro fora da faixa? → Abre/atualiza o episódio de alerta
+         │                              Gera recomendação · E-mail opcional (fila)
+         │
+         └── Registra o histórico de irrigação
+         │
+         ▼
+ESP32 consulta a faixa de umidade da lavoura
+         │
+         ├── Umidade abaixo do mínimo? → Liga a válvula até atingir o máximo
+         │                               (limite de segurança de 1 hora)
+         ▼
+ESP32 volta ao Deep Sleep até o próximo ciclo
+
+Dashboard e relatórios exibem tudo por Propriedade → Lavoura,
+junto com a previsão do tempo do Open-Meteo
 ```
 
 ## 📁 Estrutura de Pastas
@@ -133,76 +168,41 @@ Estrutura conceitual em 4 camadas, conforme definida na proposta do TCC. O que j
 ```
 AgroTwin/
 ├── app/
+│   ├── Console/Commands/     # Comandos Artisan (ex.: simulação de leituras em ambiente local)
 │   ├── Entity/               # Constantes de tabela/fillable/casts + queries estáticas
 │   ├── Enums/                # TipoSensor, TipoStatus, TipoInsumo, etc.
 │   ├── Http/
-│   │   ├── Controllers/      # Controllers (shell) + subpastas por módulo (Tela/Crud)
+│   │   ├── Controllers/      # Controllers (shell) + subpastas por módulo (Tela/Crud) + Api/
 │   │   └── Requests/         # Form Requests (validação)
-│   ├── Mail/                 # Mailables (alerta por e-mail)
-│   ├── Models/                # Modelos Eloquent + traits Core/Dto/Insert/Update
-│   ├── Services/               # Regras de negócio (leituras, alertas, irrigação, recomendações)
-│   ├── Traits/                 # Traits reutilizáveis
-│   └── Providers/               # Service Providers
+│   ├── Mail/                 # E-mails (alerta, relatório de insumos)
+│   ├── Models/               # Modelos Eloquent + traits Core/Dto/Insert/Update
+│   ├── Services/             # Regras de negócio (leituras, alertas, irrigação, recomendações,
+│   │                         #   diagnóstico do solo, clima, localidade, relatório de insumos)
+│   ├── Support/              # Faixas ideais sugeridas por cultura
+│   └── Traits/               # Traits reutilizáveis (escopo por usuário, entity)
 ├── database/
-│   └── migrations/custom/       # Migrations do projeto
+│   └── migrations/custom/    # Migrations do projeto
+├── docs/                     # Documentação de componentes (stepper)
 ├── firmware/
-│   ├── esp32-solo-7em1/         # Firmware do sensor de solo (PlatformIO)
-│   └── esp32-irrigacao/         # Firmware da válvula/relé (PlatformIO)
-├── routes/
-│   ├── web.php                  # Rotas web
-│   ├── api.php                  # Rotas API REST
-│   └── rotasWeb/                # Rotas separadas por módulo
+│   └── esp32-solo-7em1/      # Firmware do ESP32 (PlatformIO)
 ├── resources/
-│   ├── views/                   # Templates Blade, um diretório por módulo
-│   ├── css/                     # Tailwind
-│   └── js/                      # Alpine/módulos JS por tela
-├── config/                      # Configurações
-├── storage/                     # Logs, uploads
-├── tests/                       # Testes automatizados
-└── public/                      # Assets públicos
-```
-
-## 🔄 Fluxo do Sistema
-
-```
-Sensor 7-em-1 coleta dados do solo
-         │
-         │ RS485/Modbus
-         ▼
-ESP32 recebe e envia
-         │
-         │ HTTP/JSON (token do dispositivo)
-         │ [MQTT via broker é o planejado na proposta, ainda não implementado]
-         ▼
-Backend Laravel processa
-         │
-         ▼
-MariaDB armazena
-(leituras, alertas, recomendações, histórico de irrigação)
-[InfluxDB para as leituras é o planejado na proposta, ainda não implementado]
-         │
-         ▼
-Regras condicionais avaliam
-    │
-    ├── Umidade abaixo do limite? → Liga a irrigação (histórico registrado)
-    │                                 ESP32 da válvula consulta e aciona o relé
-    │
-    └── Parâmetro fora da faixa? → Gera alerta e recomendação
-                                     E-mail opcional via fila
-                                     │
-                                     ▼
-                           Dashboard exibe tudo
-                           por Propriedade → Lavoura
+│   ├── views/                # Templates Blade, um diretório por módulo + components/
+│   ├── css/                  # Tailwind
+│   └── js/                   # Alpine (componentes reutilizáveis) e módulos por tela
+├── routes/
+│   ├── web.php               # Rotas web
+│   ├── api.php               # API REST do dispositivo
+│   └── rotasWeb/             # Rotas separadas por módulo
+└── tests/                    # Testes automatizados
 ```
 
 ## 🚀 Como Executar
 
 ### Pré-requisitos
-- PHP 8.2+
-- Composer
+- PHP 8.2+ e Composer
 - Node.js 18+ e NPM
-- MariaDB
-- PlatformIO (ou extensão no VS Code) para o firmware ESP32
+- MariaDB (ou MySQL)
+- PlatformIO (ou a extensão do VS Code) para o firmware
 
 ### Instalação
 
@@ -212,7 +212,7 @@ Regras condicionais avaliam
    cd AgroTwin
    ```
 
-2. **Instale dependências**
+2. **Instale as dependências**
    ```bash
    composer install
    npm install
@@ -233,83 +233,83 @@ Regras condicionais avaliam
    DB_USERNAME=user_agrotwin
    DB_PASSWORD=senha_segura
 
-   # Opcional — notificação de alertas por e-mail
+   # Notificações por e-mail
    MAIL_MAILER=log
    QUEUE_CONNECTION=database
    ```
 
    A previsão do tempo usa o Open-Meteo, que não exige chave de API.
 
-5. **Execute migrations e inicie**
+5. **Execute as migrations e inicie**
    ```bash
    php artisan migrate
-   composer run dev    # sobe servidor + fila + logs + vite juntos
+   composer run dev    # servidor + fila + logs + vite juntos
    ```
 
-6. **Firmware ESP32** (quando o hardware estiver em mãos)
+   Em ambiente local, o agendador simula leituras a cada 5 minutos (`sensores:simular-leitura`) para o dashboard ter dados sem o hardware.
+
+6. **Firmware ESP32**
    ```
-   1. Abra firmware/esp32-solo-7em1/ (ou esp32-irrigacao/) no VS Code com PlatformIO
-   2. Copie include/config.example.h para include/config.h e preencha Wi-Fi + tokens
+   1. Abra firmware/esp32-solo-7em1/ no VS Code com PlatformIO
+   2. Copie include/config.example.h para include/config.h e preencha Wi-Fi, URL do servidor e tokens dos sensores
    3. "PlatformIO: Upload" com o ESP32 conectado por USB
    ```
-   Detalhes completos (esquema de ligação, mapeamento de registradores) no README de cada firmware.
+   O ID e o token de cada sensor ficam em Sensores → Detalhar → "Integração com o Dispositivo". Esquema de ligação e mapeamento de registradores no README do firmware.
 
 Acesse: `http://localhost:8000`
 
 ## 🧪 Testes
 
 ```bash
-php artisan test              # Testes automatizados (Feature)
-php artisan test --coverage   # Com cobertura
+php artisan test
 ```
 
-Cobrem hoje: ingestão de leituras (autenticação, validação, rate limiting), geração de alertas, decisão de irrigação e recomendações.
+Os testes usam SQLite em memória (o PHP precisa da extensão `pdo_sqlite`) e nunca acessam a internet: chamadas ao Open-Meteo são simuladas com `Http::fake()`.
+
+Cobrem: ingestão de leituras pela API (autenticação, validação, rate limiting), episódios de alerta, irrigação, recomendações, diagnóstico do solo, faixas por cultura, busca e paginação das listagens, isolamento entre usuários, cadastro de propriedade e os serviços do Open-Meteo.
 
 ## 📦 Deploy (Produção)
 
 ```bash
+# .env
 APP_ENV=production
 APP_DEBUG=false
 
+# Comandos
+composer install --no-dev --optimize-autoloader
 npm run build
+php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan migrate --force
 ```
 
-## 🗓️ Roadmap
+A fila de e-mails precisa de um worker rodando (`php artisan queue:work`).
 
-### TCC II — Agosto a Dezembro 2026
-- [x] Estrutura Laravel com MVC
-- [x] Migrations do banco de dados
-- [x] CRUDs completos (propriedades, lavouras, insumos, sensores)
-- [x] API REST de ingestão de leituras (autenticada, com rate limiting)
-- [x] Dashboard com gráficos e dados reais, por Propriedade/Lavoura
-- [x] Dashboard avalia cada leitura contra a faixa configurada da lavoura (medidores mín/máx)
-- [x] Recuperação de senha por e-mail e limite de tentativas no login (5/min)
-- [x] Relatório de insumo com exportação em PDF e envio por e-mail
-- [x] Telas de autenticação e dashboard redesenhadas (painel escuro de estação + leituras em monoespaçada)
-- [x] Listagens e formulários padronizados (estado vazio, selos de status, datas/números no padrão brasileiro)
-- [x] Previsão do tempo (Open-Meteo) no dashboard e exportação em PDF do relatório de sensores
-- [x] Regras condicionais de irrigação (automática e manual) + histórico
-- [x] Sistema de alertas e recomendações (persistidas)
-- [x] Notificação de alertas por e-mail (fila)
-- [x] Firmware ESP32 (sensor e válvula) — aguardando hardware físico para teste real
-- [x] Testes automatizados
-- [ ] Integração MQTT (ESP32 → Mosquitto → Laravel) — hoje é REST direto
-- [ ] Integração InfluxDB para séries temporais — hoje é MariaDB
-- [ ] TLS/SSL na comunicação do dispositivo
-- [ ] Deep Sleep no ESP32
-- [ ] Classificação de severidade dos alertas (hoje sempre "warning")
-- [ ] Teste formal de tempo de resposta do dashboard (<5s, requisito da proposta)
-- [ ] Machine Learning (predição de irrigação)
-- [ ] Validação em cenário real com o hardware físico
+## 🗓️ Entregas do TCC II (Agosto a Dezembro 2026)
 
-### Futuro
-- [ ] App mobile (React Native)
-- [ ] Conectividade LoRaWAN
-- [ ] Notificações push
+- [x] Estrutura Laravel MVC em camadas (Entity / Model / Service / Controller)
+- [x] CRUDs de propriedades, lavouras, insumos e sensores
+- [x] API REST de ingestão de leituras, autenticada por token e com rate limiting
+- [x] Firmware ESP32 com leitura RS485/Modbus, envio das leituras, controle da irrigação e Deep Sleep
+- [x] Validação com o hardware físico, com leituras reais em produção
+- [x] Dashboard com dados reais por Propriedade → Lavoura, avaliados contra as faixas ideais
+- [x] Faixas ideais por lavoura com valores sugeridos por cultura
+- [x] Irrigação automática com histórico
+- [x] Alertas por episódio com severidade e notificação por e-mail
+- [x] Recomendações por regras condicionais
+- [x] Relatórios com diagnóstico do solo e exportação em PDF
+- [x] Relatório de insumos com PDF e envio por e-mail
+- [x] Previsão do tempo (Open-Meteo) e cadastro de propriedade com mapa
+- [x] Recuperação de senha, limite de tentativas no login e isolamento multi-tenant
+- [x] Testes automatizados (105 testes)
+
+### Trabalhos Futuros
+- Comunicação criptografada (HTTPS/TLS) entre o ESP32 e o servidor
+- Acionamento manual da válvula pelo dashboard chegando ao dispositivo
+- Machine Learning para predição de irrigação, usando o histórico de leituras e a previsão do tempo
+- App mobile e notificações push
+- Conectividade LoRaWAN para áreas sem Wi-Fi
 
 ## 📚 Documentação Acadêmica
 
@@ -328,4 +328,4 @@ Este projeto é parte do **Trabalho de Conclusão de Curso (TCC)** do curso de *
 
 ---
 
-**Status**: Em Desenvolvimento Ativo
+**Status**: Concluído — TCC II (2026)

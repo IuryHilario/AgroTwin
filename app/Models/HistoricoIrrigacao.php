@@ -27,7 +27,13 @@ class HistoricoIrrigacao extends Model
             return null;
         }
 
-        $minutos = $this->dt_inicio->diffInMinutes($this->dt_fim);
+        $segundos = (int) abs($this->dt_inicio->diffInSeconds($this->dt_fim));
+
+        if ($segundos < 60) {
+            return "{$segundos} s";
+        }
+
+        $minutos = intdiv($segundos, 60);
 
         return $minutos < 60
             ? "{$minutos} min"
