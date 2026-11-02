@@ -184,9 +184,11 @@ detalhes da propriedade, cadastro de propriedade em etapas com seletor de locali
 - Testes — cobrem API de sensor, alertas (serviço e tela), irrigação, recomendações, diagnóstico dos
   relatórios, limites por cultura, busca/paginação, isolamento multi-tenant, cadastro de propriedade e os
   serviços do Open-Meteo (com `Http::fake`); não cobrem auth nem o JavaScript dos componentes
-- Firmware — o ESP32 em campo roda uma versão com Deep Sleep, relé da válvula e histerese (liga abaixo do
-  mínimo, desliga no máximo, no máximo 1h seguida), que consulta `/api/sensores/{id}/config` e `/limites`.
-  O `firmware/esp32-solo-7em1/src/main.cpp` versionado ainda é a versão anterior, sem isso
+- Firmware — `firmware/esp32-solo-7em1/src/main.cpp` tem Deep Sleep, relé da válvula e histerese (liga abaixo
+  do mínimo, desliga no máximo; aberturas de 5 min, no máximo 1h seguida), descarta umidade fora de (0, 100] e
+  bloqueia a irrigação após 3 ciclos sem atingir o máximo. Consulta `/api/sensores/{id}/config` e `/limites`.
+  Credenciais e tokens no repositório são placeholders. A versão com descarte e bloqueio (commit `265bbc7`)
+  ainda não foi compilada nem gravada no ESP32
 - Irrigação manual — o botão do dashboard registra o histórico, mas o firmware não consulta esse comando,
   então a válvula não é acionada por ele
 
