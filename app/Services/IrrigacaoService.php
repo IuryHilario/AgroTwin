@@ -14,9 +14,27 @@ use App\Models\ConfiguracaoLimite;
 use App\Models\HistoricoIrrigacao;
 use App\Models\Lavoura;
 use App\Models\LeituraSensor;
+use Illuminate\Support\Facades\Log;
 
 class IrrigacaoService
 {
+    /**
+     * Tempo máximo de uma irrigação registrada, igual ao limite do firmware
+     * (TEMPO_MAXIMO_IRRIGACAO_SEGUNDOS). Passado esse tempo, o registro é
+     * encerrado mesmo que a umidade não tenha voltado ao limite.
+     */
+    public const TEMPO_MAXIMO_MINUTOS = 60;
+
+    /**
+     * Umidade fora de (0, 100] não é solo seco: é sensor fora da terra,
+     * desconectado ou com defeito. Uma leitura assim nunca aciona a
+     * irrigação — foi o que manteve a irrigação ativa por ~93 h em 08/09/2026.
+     */
+    public static function umidadeValida(float $valor): bool
+    {
+        return $valor > 0 && $valor <= 100;
+    }
+
     /**
      * Avalia uma nova leitura de umidade do solo e inicia/encerra a
      * irrigação automaticamente, conforme os limites configurados para a
@@ -44,12 +62,46 @@ class IrrigacaoService
             return;
         }
 
+        if (!self::umidadeValida((float) $leitura->valor)) {
+            Log::warning('Leitura de umidade inválida descartada da decisão de irrigação.', [
+                'id_sensor' => $sensor->id_sensor,
+                'valor' => $leitura->valor,
+            ]);
+            $this->encerrar($lavoura);
+
+            return;
+        }
+
+        if ($this->excedeuTempoMaximo($lavoura)) {
+            $this->encerrar($lavoura);
+
+            return;
+        }
+
         if ($leitura->valor < $limite->valor_min) {
             $motivo = "Umidade do solo abaixo do limite mínimo ({$leitura->valor}% < {$limite->valor_min}%)";
             $this->iniciar($lavoura, 'automatico', $motivo);
         } elseif ($lavoura->fl_irrigacao_ativa) {
             $this->encerrar($lavoura);
         }
+    }
+
+    /**
+     * Verdadeiro quando a irrigação em aberto já passou do tempo máximo.
+     */
+    public function excedeuTempoMaximo(Lavoura $lavoura): bool
+    {
+        if (!$lavoura->fl_irrigacao_ativa) {
+            return false;
+        }
+
+        $aberta = HistoricoIrrigacao::where('id_lavoura', $lavoura->id_lavoura)
+            ->whereNull('dt_fim')
+            ->latest('dt_inicio')
+            ->first();
+
+        return $aberta !== null
+            && $aberta->dt_inicio->lte(now()->subMinutes(self::TEMPO_MAXIMO_MINUTOS));
     }
 
     /**

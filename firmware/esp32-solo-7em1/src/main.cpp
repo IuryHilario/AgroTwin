@@ -15,6 +15,10 @@ const char* servidor = "URL_COMPLETA_DO_SERVIDOR"; // Servidor (http://127.0.0.1
 #define TEMPO_ESPERA_IRRIGACAO_SEGUNDOS 300 // 5 minutos entre checagens durante irrigacao
 #define TEMPO_MAXIMO_IRRIGACAO_SEGUNDOS 3600 // seguranca: nunca irriga mais que 1 hora seguida
 #define uS_TO_S_FACTOR 1000000ULL
+// seguranca: apos 3 ciclos seguidos sem atingir o maximo (timeout ou erro de
+// leitura), a irrigacao fica bloqueada ate uma leitura voltar ao minimo.
+// Evita irrigar sem parar quando o sensor esta fora da terra ou com defeito.
+#define MAX_CICLOS_SEM_ATINGIR_MAXIMO 3
 
 // ===== CONFIGURAÇÃO MAX485 =====
 #define MAX485_DE_RE 4
@@ -46,6 +50,15 @@ SensorInfo sensores[] = {
 
 const int NUM_SENSORES = 7; // Quantidade de buscas
 const int INDICE_SENSOR_UMIDADE = 0; // Indice do sensor de umidade
+
+// Mantido na memoria RTC, que sobrevive ao Deep Sleep.
+RTC_DATA_ATTR int ciclosSemAtingirMaximo = 0;
+
+// Umidade fora de (0, 100] nao e solo seco: e sensor fora da terra,
+// desconectado ou com defeito. Nunca aciona a irrigacao.
+bool umidadeValida(float valor) {
+  return valor > 0 && valor <= 100;
+}
 
 void preTransmission() { digitalWrite(MAX485_DE_RE, HIGH); }
 void postTransmission() { digitalWrite(MAX485_DE_RE, LOW); }
@@ -207,7 +220,9 @@ void setup() {
     float umidade = valores[INDICE_SENSOR_UMIDADE];
     float limiteMin, limiteMax;
 
-    if (buscarLimitesUmidade(limiteMin, limiteMax)) {
+    if (!umidadeValida(umidade)) {
+      Serial.println("Leitura de umidade invalida. Irrigacao nao acionada por seguranca.");
+    } else if (buscarLimitesUmidade(limiteMin, limiteMax)) {
       Serial.print("Umidade atual: ");
       Serial.print(umidade);
       Serial.print("%  |  Min: ");
@@ -215,7 +230,9 @@ void setup() {
       Serial.print("%  Max: ");
       Serial.println(limiteMax);
 
-      if (umidade < limiteMin) {
+      if (umidade < limiteMin && ciclosSemAtingirMaximo >= MAX_CICLOS_SEM_ATINGIR_MAXIMO) {
+        Serial.println(">>> Irrigacao BLOQUEADA: ciclos anteriores nao atingiram o maximo. Verifique o sensor e a agua.");
+      } else if (umidade < limiteMin) {
         Serial.println(">>> Umidade abaixo do minimo. Iniciando irrigacao...");
 
         unsigned long inicioIrrigacaoTotal = millis();
@@ -241,7 +258,7 @@ void setup() {
           Serial.print(umidade);
           Serial.println("%");
 
-          if (umidade < 0) {
+          if (!umidadeValida(umidade)) {
             Serial.println(">>> Erro na leitura durante irrigacao. Abortando por seguranca.");
             break;
           }
@@ -261,10 +278,15 @@ void setup() {
         digitalWrite(RELE_PIN, RELE_DESLIGADO);
         Serial.println(">>> Irrigacao encerrada. Valvula desligada.");
 
-        // Envia a leitura final apos a irrigacao
-        enviarLeitura(sensores[INDICE_SENSOR_UMIDADE].id, sensores[INDICE_SENSOR_UMIDADE].token, umidade);
+        ciclosSemAtingirMaximo = atingiuMaximo ? 0 : ciclosSemAtingirMaximo + 1;
+
+        // Envia a leitura final apos a irrigacao (so se for valida)
+        if (umidadeValida(umidade)) {
+          enviarLeitura(sensores[INDICE_SENSOR_UMIDADE].id, sensores[INDICE_SENSOR_UMIDADE].token, umidade);
+        }
 
       } else {
+        ciclosSemAtingirMaximo = 0;
         Serial.println(">>> Umidade dentro da faixa ideal. Nenhuma acao necessaria.");
       }
     } else {

@@ -77,6 +77,76 @@ class IrrigacaoServiceTest extends TestCase
         $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
     }
 
+    public function test_leitura_zero_nao_aciona_irrigacao(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor(['tp_sensor' => 'umidade_solo']);
+        $this->definirLimite($lavoura, 'umidade_solo', 30, 80);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 0.0));
+
+        $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
+        $this->assertDatabaseCount('historico_irrigacao', 0);
+    }
+
+    public function test_leitura_acima_de_cem_nao_aciona_irrigacao(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor(['tp_sensor' => 'umidade_solo']);
+        $this->definirLimite($lavoura, 'umidade_solo', 30, 80);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 150.0));
+
+        $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
+        $this->assertDatabaseCount('historico_irrigacao', 0);
+    }
+
+    public function test_leitura_invalida_encerra_irrigacao_em_andamento(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor(['tp_sensor' => 'umidade_solo']);
+        $this->definirLimite($lavoura, 'umidade_solo', 30, 80);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 18.0));
+        $this->assertTrue($lavoura->refresh()->fl_irrigacao_ativa);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 0.0));
+
+        $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
+        $this->assertDatabaseMissing('historico_irrigacao', [
+            'id_lavoura' => $lavoura->id_lavoura,
+            'dt_fim' => null,
+        ]);
+    }
+
+    public function test_encerra_irrigacao_apos_tempo_maximo(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor(['tp_sensor' => 'umidade_solo']);
+        $this->definirLimite($lavoura, 'umidade_solo', 30, 80);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 18.0));
+        $this->assertTrue($lavoura->refresh()->fl_irrigacao_ativa);
+
+        $this->travel(IrrigacaoService::TEMPO_MAXIMO_MINUTOS + 1)->minutes();
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 18.0));
+
+        $this->assertFalse($lavoura->refresh()->fl_irrigacao_ativa);
+        $this->assertDatabaseMissing('historico_irrigacao', [
+            'id_lavoura' => $lavoura->id_lavoura,
+            'dt_fim' => null,
+        ]);
+    }
+
+    public function test_mantem_irrigacao_antes_do_tempo_maximo(): void
+    {
+        [, $lavoura, $sensor] = $this->cenarioComSensor(['tp_sensor' => 'umidade_solo']);
+        $this->definirLimite($lavoura, 'umidade_solo', 30, 80);
+
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 18.0));
+        $this->travel(IrrigacaoService::TEMPO_MAXIMO_MINUTOS - 1)->minutes();
+        app(IrrigacaoService::class)->verificar($this->registrarLeitura($sensor, 18.0));
+
+        $this->assertTrue($lavoura->refresh()->fl_irrigacao_ativa);
+        $this->assertDatabaseCount('historico_irrigacao', 1);
+    }
+
     public function test_iniciar_e_encerrar_manualmente(): void
     {
         [, $lavoura] = $this->cenarioComSensor();
